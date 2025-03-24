@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using DNDWithin.Api.Mapping;
 using DNDWithin.Application;
 using DNDWithin.Application.Database;
 using Scalar.AspNetCore;
@@ -41,6 +42,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseMiddleware<ValidationMappingMiddleware>();
 
 app.MapControllers();
 

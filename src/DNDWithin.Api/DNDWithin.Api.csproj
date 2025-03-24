@@ -13,10 +13,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Controllers\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\DNDWithin.Application\DNDWithin.Application.csproj" />
       <ProjectReference Include="..\DNDWithin.Contracts\DNDWithin.Contracts.csproj" />
     </ItemGroup>

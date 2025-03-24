@@ -3,6 +3,7 @@ using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Repositories.Implementation;
 using DNDWithin.Application.Services;
 using DNDWithin.Application.Services.Implementation;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DNDWithin.Application;
@@ -13,6 +14,8 @@ public static class ApplicationServiceCollectionExtensions
     {
         services.AddSingleton<IAccountRepository, AccountRepository>();
         services.AddSingleton<IAccountService, AccountService>();
+        services.AddValidatorsFromAssemblyContaining<IApplicationMarker>(ServiceLifetime.Singleton); // set to singleton as it'll be one.
+        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         return services;
     }
 
