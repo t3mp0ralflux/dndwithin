@@ -16,7 +16,7 @@ public static class ContractMapping
                    FirstName = request.FirstName,
                    LastName = request.LastName,
                    UserName = request.UserName,
-                   MobilePhone = request.MobilePhone,
+                   Password = request.Password,
                    Email = request.Email
                };
     }
@@ -30,7 +30,6 @@ public static class ContractMapping
                     LastName = account.LastName,
                     Email = account.Email,
                     UserName = account.UserName,
-                    MobilePhone = account.MobilePhone,
                     AccountRole = (ctr.AccountRole)account.AccountRole,
                     AccountStatus = (ctr.AccountStatus)account.AccountStatus,
                     LastLogin = account.LastLoginUtc

@@ -11,13 +11,15 @@ public class AccountService : IAccountService
     private readonly IValidator<Account> _accountValidator;
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IPasswordHasher _passwordHasher;
     
-    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator)
+    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher)
     {
         _accountRepository = accountRepository;
         _accountValidator = accountValidator;
         _dateTimeProvider = dateTimeProvider;
         _optionsValidator = optionsValidator;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<bool> CreateAsync(Account account, CancellationToken token)
@@ -25,6 +27,7 @@ public class AccountService : IAccountService
         await _accountValidator.ValidateAndThrowAsync(account, token);
         account.CreatedUtc = _dateTimeProvider.GetUtcNow();
         account.UpdatedUtc = _dateTimeProvider.GetUtcNow();
+        account.Password = _passwordHasher.Hash(account.Password);
         
         return await _accountRepository.CreateAsync(account, token);
     }

@@ -13,15 +13,27 @@ public class AccountValidator : AbstractValidator<Account>
         _accountRepository = accountRepository;
         RuleFor(x => x.FirstName).NotEmpty();
         RuleFor(x => x.LastName).NotEmpty();
-        RuleFor(x => x.UserName).MustAsync(ValidateUserName);
+        RuleFor(x => x.UserName).CustomAsync(ValidateUserName);
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
-        RuleFor(x => x.MobilePhone).NotEmpty();
+        RuleFor(x => x.Password).NotEmpty();
     }
 
-    private async Task<bool> ValidateUserName(Account account, string userName, CancellationToken token = default)
+    private async Task<bool> ValidateUserName(string? userName, ValidationContext<Account> context, CancellationToken token = default)
     {
-        Account? userNameExists = await _accountRepository.UserNameExistsAsync(account, token);
+        if (string.IsNullOrWhiteSpace(userName))
+        {
+            context.AddFailure("Username cannot be empty");
+            return false;
+        }
+        
+        Account? userNameExists = await _accountRepository.UserNameExistsAsync(userName, token);
 
-        return userNameExists is null;
+        if (userNameExists is not null)
+        {
+            context.AddFailure("Username already in use");
+            return false;
+        }
+
+        return true;
     }
 }

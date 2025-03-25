@@ -15,7 +15,7 @@ public class AccountRepository : IAccountRepository
                                             last_name as lastname, 
                                             username, 
                                             email, 
-                                            mobile_phone as mobilephone, 
+                                            password, 
                                             created_utc as createdutc, 
                                             updated_utc as updatedutc, 
                                             last_login_utc as lastloginutc, 
@@ -35,8 +35,8 @@ public class AccountRepository : IAccountRepository
         using IDbTransaction transaction = connection.BeginTransaction();
 
         int result = await connection.ExecuteAsync(new CommandDefinition("""
-                                                                         insert into account(id, first_name, last_name, username, email, mobile_phone, created_utc, updated_utc, last_login_utc, deleted_utc, account_status, account_role)
-                                                                         values (@Id, @FirstName, @LastName, @UserName, @Email, @MobilePhone, @CreatedUtc, @UpdatedUtc, @LastLoginUtc, @DeletedUtc, @AccountStatus, @AccountRole)
+                                                                         insert into account(id, first_name, last_name, username, email, password, created_utc, updated_utc, last_login_utc, deleted_utc, account_status, account_role)
+                                                                         values (@Id, @FirstName, @LastName, @UserName, @Email, @Password, @CreatedUtc, @UpdatedUtc, @LastLoginUtc, @DeletedUtc, @AccountStatus, @AccountRole)
                                                                          """, account, cancellationToken: token));
 
         transaction.Commit();
@@ -44,13 +44,13 @@ public class AccountRepository : IAccountRepository
         return result > 0;
     }
 
-    public async Task<Account?> UserNameExistsAsync(Account account, CancellationToken token = default)
+    public async Task<Account?> UserNameExistsAsync(string userName, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
         Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition("""
-                                                                                                    select * from account where username = @UserName 
-                                                                                                    """, new { account.UserName }, cancellationToken: token));
+                                                                                                    select * from account where username = @userName 
+                                                                                                    """, new { userName }, cancellationToken: token));
         return result;
     }
 

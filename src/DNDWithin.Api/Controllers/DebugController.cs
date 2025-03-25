@@ -3,7 +3,7 @@
 namespace DNDWithin.Api.Controllers;
 
 [ApiController]
-public class DebugController
+[Route("api/debug")]
+public class DebugController : ControllerBase
 {
-
 }

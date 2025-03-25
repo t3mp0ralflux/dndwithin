@@ -47,7 +47,7 @@ app.UseMiddleware<ValidationMappingMiddleware>();
 
 app.MapControllers();
 
-DbInitializer dbInitializer = app.Services.GetRequiredService<DbInitializer>();
-await dbInitializer.InitializeAsync();
+// DbInitializer dbInitializer = app.Services.GetRequiredService<DbInitializer>();
+// await dbInitializer.InitializeAsync();
 
 app.Run();

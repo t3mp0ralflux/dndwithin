@@ -16,6 +16,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<IAccountService, AccountService>();
         services.AddValidatorsFromAssemblyContaining<IApplicationMarker>(ServiceLifetime.Singleton); // set to singleton as it'll be one.
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
         return services;
     }
 

@@ -7,7 +7,7 @@ public class Account
     public required string LastName { get; init; }
     public required string UserName { get; init; }
     public required string Email { get; set; }
-    public required string MobilePhone { get; set; }
+    public required string Password { get; set; }
     
     // managed by API
     public AccountStatus AccountStatus { get; set; }
