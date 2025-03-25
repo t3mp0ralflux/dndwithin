@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using DNDWithin.Application.Models;
+using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Repositories;
 using FluentValidation;
 
@@ -47,5 +48,15 @@ public class AccountService : IAccountService
     public async Task<int> GetCountAsync(string? userName, CancellationToken token = default)
     {
         return await _accountRepository.GetCountAsync(userName, token);
+    }
+
+    public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
+    {
+        return await _accountRepository.GetByEmailAsync(email, token);
+    }
+
+    public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
+    {
+        return await _accountRepository.GetByUsernameAsync(userName, token);
     }
 }

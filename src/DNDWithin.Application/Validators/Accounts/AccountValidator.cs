@@ -1,8 +1,8 @@
-﻿using DNDWithin.Application.Models;
+﻿using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Repositories;
 using FluentValidation;
 
-namespace DNDWithin.Application.Validators;
+namespace DNDWithin.Application.Validators.Accounts;
 
 public class AccountValidator : AbstractValidator<Account>
 {

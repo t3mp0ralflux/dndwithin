@@ -10,4 +10,11 @@ create table if not exists account (
     last_login_utc timestamp not null,
     deleted_utc timestamp null,
     account_status int not null,
-    account_role int not null);
+    account_role int not null
+);
+
+create table if not exists globalsettings (
+    id UUID primary key,
+    name varchar not null,
+    value varchar not null
+);

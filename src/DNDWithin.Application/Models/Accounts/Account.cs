@@ -1,4 +1,4 @@
-﻿namespace DNDWithin.Application.Models;
+﻿namespace DNDWithin.Application.Models.Accounts;
 
 public class Account
 {

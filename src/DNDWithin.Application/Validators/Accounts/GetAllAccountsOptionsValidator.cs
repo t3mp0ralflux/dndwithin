@@ -1,7 +1,7 @@
-﻿using DNDWithin.Application.Models;
+﻿using DNDWithin.Application.Models.Accounts;
 using FluentValidation;
 
-namespace DNDWithin.Application.Validators;
+namespace DNDWithin.Application.Validators.Accounts;
 
 public class GetAllAccountsOptionsValidator : AbstractValidator<GetAllAccountsOptions>
 {

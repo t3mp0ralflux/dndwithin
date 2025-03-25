@@ -2,6 +2,7 @@
 using Dapper;
 using DNDWithin.Application.Database;
 using DNDWithin.Application.Models;
+using DNDWithin.Application.Models.Accounts;
 
 namespace DNDWithin.Application.Repositories.Implementation;
 
@@ -105,5 +106,25 @@ public class AccountRepository : IAccountRepository
                                                                             from account
                                                                             where (@userName is null || username like ('%' || @userName || '%'))
                                                                             """, new { userName }, cancellationToken: token));
+    }
+
+    public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
+                                                                                         select {AccountFields}
+                                                                                         from account
+                                                                                         where email = @email
+                                                                                         """, new { email }, cancellationToken: token));
+    }
+
+    public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
+                                                                                          select {AccountFields}
+                                                                                          from account
+                                                                                          where username = @userName
+                                                                                          """, new { userName }, cancellationToken: token));
     }
 }

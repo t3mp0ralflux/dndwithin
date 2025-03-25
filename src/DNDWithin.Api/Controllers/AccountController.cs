@@ -1,9 +1,12 @@
 ﻿using Asp.Versioning;
+using DNDWithin.Api.Auth;
 using DNDWithin.Api.Mapping;
 using DNDWithin.Application.Models;
+using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Responses.Account;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DNDWithin.Api.Controllers;
@@ -55,5 +58,12 @@ public class AccountController : ControllerBase
         AccountsResponse response = result.ToResponse(request.Page, request.PageSize, accountCount);
 
         return Ok(response);
+    }
+
+    [Authorize(AuthConstants.AdminUserPolicyName)]
+    [HttpDelete(ApiEndpoints.Accounts.Delete)]
+    public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken token)
+    {
+        return Ok("Deleted");
     }
 }
