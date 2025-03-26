@@ -9,6 +9,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using Testing.Common;
 using ValidationException = FluentValidation.ValidationException;
 
 namespace DNDWithin.API.Tests.Unit;
@@ -16,7 +17,6 @@ namespace DNDWithin.API.Tests.Unit;
 public class AccountControllerTests
 {
     public IAccountService _AccountService = Substitute.For<IAccountService>();
-    public Faker _faker = new();
 
     public AccountControllerTests()
     {
@@ -30,13 +30,15 @@ public class AccountControllerTests
     {
         // Arrange
         _AccountService.CreateAsync(Arg.Any<Account>()).Throws(new ValidationException("Information is required"));
+        var fakeAccount = Fakes.GenerateAccount();
+        
         AccountCreateRequest request = new()
                                        {
-                                           Email = _faker.Person.Email,
-                                           FirstName = _faker.Person.FirstName,
-                                           LastName = _faker.Person.LastName,
-                                           Password = _faker.Internet.Password(),
-                                           UserName = _faker.Internet.UserName()
+                                           Email = fakeAccount.Email,
+                                           FirstName = fakeAccount.FirstName,
+                                           LastName = fakeAccount.LastName,
+                                           Password = fakeAccount.Password,
+                                           UserName = fakeAccount.UserName
                                        };
         // Act
         Func<Task<BadRequestResult>> result = async () => (BadRequestResult)await _sut.Create(request, CancellationToken.None);
@@ -50,13 +52,15 @@ public class AccountControllerTests
     {
         // Arrange
         _AccountService.CreateAsync(Arg.Any<Account>()).Returns(true);
+        var fakeAccount = Fakes.GenerateAccount();
+        
         AccountCreateRequest request = new()
                                        {
-                                           Email = _faker.Person.Email,
-                                           FirstName = _faker.Person.FirstName,
-                                           LastName = _faker.Person.LastName,
-                                           Password = _faker.Internet.Password(),
-                                           UserName = _faker.Internet.UserName()
+                                           Email = fakeAccount.Email,
+                                           FirstName = fakeAccount.FirstName,
+                                           LastName = fakeAccount.LastName,
+                                           Password = fakeAccount.Password,
+                                           UserName = fakeAccount.UserName
                                        };
 
         AccountResponse expectedResponse = request.ToAccount().ToResponse();
@@ -92,20 +96,7 @@ public class AccountControllerTests
         // Arrange
         Guid accountId = Guid.NewGuid();
 
-        Account account = new()
-                          {
-                              Id = accountId,
-                              FirstName = _faker.Person.FirstName,
-                              LastName = _faker.Person.LastName,
-                              Email = _faker.Person.Email,
-                              UserName = _faker.Internet.UserName(),
-                              Password = _faker.Internet.Password(),
-                              AccountRole = AccountRole.admin,
-                              AccountStatus = AccountStatus.active,
-                              CreatedUtc = DateTime.UtcNow,
-                              UpdatedUtc = DateTime.UtcNow,
-                              LastLoginUtc = DateTime.UtcNow
-                          };
+        Account account = Fakes.GenerateAccount();
 
         _AccountService.GetByIdAsync(accountId, Arg.Any<CancellationToken>()).Returns(account);
 
@@ -180,19 +171,7 @@ public class AccountControllerTests
 
         Random random = new();
 
-        List<Account> accounts = Enumerable.Range(5, random.Next(1, 15)).Select(x => new Account
-                                                                                     {
-                                                                                         Id = Guid.NewGuid(),
-                                                                                         FirstName = _faker.Person.FirstName,
-                                                                                         LastName = _faker.Person.LastName,
-                                                                                         Email = _faker.Person.Email,
-                                                                                         UserName = _faker.Internet.UserName(),
-                                                                                         Password = _faker.Internet.Password(),
-                                                                                         AccountRole = AccountRole.standard,
-                                                                                         AccountStatus = AccountStatus.active,
-                                                                                         CreatedUtc = DateTime.UtcNow,
-                                                                                         UpdatedUtc = DateTime.UtcNow
-                                                                                     }).ToList();
+        List<Account> accounts = Enumerable.Range(5, random.Next(1, 15)).Select(x => Fakes.GenerateAccount()).ToList();
 
         _AccountService.GetAllAsync(Arg.Any<GetAllAccountsOptions>(), CancellationToken.None).Returns(accounts);
         _AccountService.GetCountAsync(requestOptions.UserName, CancellationToken.None).Returns(accounts.Count);
