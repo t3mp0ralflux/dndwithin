@@ -4,9 +4,9 @@ using DNDWithin.Api.Mapping;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.Account;
+using DNDWithin.Contracts.Responses.Account;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using ValidationException = FluentValidation.ValidationException;
@@ -15,30 +15,31 @@ namespace DNDWithin.API.Tests.Unit;
 
 public class AccountControllerTests
 {
+    public IAccountService _AccountService = Substitute.For<IAccountService>();
+    public Faker _faker = new();
+
     public AccountControllerTests()
     {
         _sut = new AccountController(_AccountService);
     }
 
     public AccountController _sut { get; set; }
-    public IAccountService _AccountService = Substitute.For<IAccountService>();
-    public Faker _faker = new ();
 
     [Fact]
-    public async Task Create_ShouldThrowBadRequest_WhenRequestIsMissingRequiredInformation()
+    public async Task Create_ShouldThrowException_WhenRequestIsMissingRequiredInformation()
     {
         // Arrange
         _AccountService.CreateAsync(Arg.Any<Account>()).Throws(new ValidationException("Information is required"));
-        var request = new AccountCreateRequest()
-                      {
-                          Email = _faker.Person.Email,
-                          FirstName = _faker.Person.FirstName,
-                          LastName = _faker.Person.LastName,
-                          Password = _faker.Internet.Password(),
-                          UserName = _faker.Internet.UserName()
-                      };
+        AccountCreateRequest request = new()
+                                       {
+                                           Email = _faker.Person.Email,
+                                           FirstName = _faker.Person.FirstName,
+                                           LastName = _faker.Person.LastName,
+                                           Password = _faker.Internet.Password(),
+                                           UserName = _faker.Internet.UserName()
+                                       };
         // Act
-        var result = async () => (BadRequestResult)await _sut.Create(request, CancellationToken.None);
+        Func<Task<BadRequestResult>> result = async () => (BadRequestResult)await _sut.Create(request, CancellationToken.None);
 
         // Assert
         await result.Should().ThrowAsync<ValidationException>("Information is required");
@@ -49,21 +50,22 @@ public class AccountControllerTests
     {
         // Arrange
         _AccountService.CreateAsync(Arg.Any<Account>()).Returns(true);
-        var request = new AccountCreateRequest()
-                      {
-                          Email = _faker.Person.Email,
-                          FirstName = _faker.Person.FirstName,
-                          LastName = _faker.Person.LastName,
-                          Password = _faker.Internet.Password(),
-                          UserName = _faker.Internet.UserName()
-                      };
+        AccountCreateRequest request = new()
+                                       {
+                                           Email = _faker.Person.Email,
+                                           FirstName = _faker.Person.FirstName,
+                                           LastName = _faker.Person.LastName,
+                                           Password = _faker.Internet.Password(),
+                                           UserName = _faker.Internet.UserName()
+                                       };
 
-        var expectedResponse = request.ToAccount().ToResponse();
-        
+        AccountResponse expectedResponse = request.ToAccount().ToResponse();
+
         // Act
-        var result = (CreatedAtActionResult)await _sut.Create(request, CancellationToken.None);
-        
+        CreatedAtActionResult result = (CreatedAtActionResult)await _sut.Create(request, CancellationToken.None);
+
         // Assert
+        result.Should().NotBeNull();
         result.StatusCode.Should().Be(201);
         result.ActionName.Should().Be(nameof(_sut.Get));
         result.RouteValues.Should().NotBeEmpty();
@@ -75,11 +77,12 @@ public class AccountControllerTests
     {
         // Arrange
         _AccountService.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Account?)null);
-        
+
         // Act
-        var result = (NotFoundResult)await _sut.Get(Guid.NewGuid(), CancellationToken.None);
-        
+        NotFoundResult result = (NotFoundResult)await _sut.Get(Guid.NewGuid(), CancellationToken.None);
+
         // Assert
+        result.Should().NotBeNull();
         result.StatusCode.Should().Be(404);
     }
 
@@ -87,32 +90,121 @@ public class AccountControllerTests
     public async Task Get_ShouldReturnAccount_WhenAccountIsFound()
     {
         // Arrange
-        var accountId = Guid.NewGuid();
-        
-        var account = new Account()
-                      {
-                          Id = accountId,
-                          FirstName = _faker.Person.FirstName,
-                          LastName = _faker.Person.LastName,
-                          Email = _faker.Person.Email,
-                          UserName = _faker.Internet.UserName(),
-                          Password = _faker.Internet.Password(),
-                          AccountRole = AccountRole.admin,
-                          AccountStatus = AccountStatus.active,
-                          CreatedUtc = DateTime.UtcNow,
-                          UpdatedUtc = DateTime.UtcNow,
-                          LastLoginUtc = DateTime.UtcNow,
-                      };
+        Guid accountId = Guid.NewGuid();
+
+        Account account = new()
+                          {
+                              Id = accountId,
+                              FirstName = _faker.Person.FirstName,
+                              LastName = _faker.Person.LastName,
+                              Email = _faker.Person.Email,
+                              UserName = _faker.Internet.UserName(),
+                              Password = _faker.Internet.Password(),
+                              AccountRole = AccountRole.admin,
+                              AccountStatus = AccountStatus.active,
+                              CreatedUtc = DateTime.UtcNow,
+                              UpdatedUtc = DateTime.UtcNow,
+                              LastLoginUtc = DateTime.UtcNow
+                          };
 
         _AccountService.GetByIdAsync(accountId, Arg.Any<CancellationToken>()).Returns(account);
-        
-        var expectedResponse = account.ToResponse();
+
+        AccountResponse expectedResponse = account.ToResponse();
         // Act
-        var result = (OkObjectResult)await _sut.Get(accountId, CancellationToken.None);
+        OkObjectResult result = (OkObjectResult)await _sut.Get(accountId, CancellationToken.None);
 
         // Assert
+        result.Should().NotBeNull();
         result.StatusCode.Should().Be(200);
         result.Value.Should().BeEquivalentTo(expectedResponse);
+    }
 
+    [Fact]
+    public async Task GetAll_ShouldThrowException_WhenWrongSortFieldsArePassedIn()
+    {
+        // Arrange
+        GetAllAccountsRequest request = new()
+                                        {
+                                            Page = 1,
+                                            PageSize = 5
+                                        };
+
+        _AccountService.GetAllAsync(Arg.Any<GetAllAccountsOptions>(), CancellationToken.None).Throws(new ValidationException("Bad Search Term"));
+        // Act
+        Func<Task<IActionResult>> action = async () => await _sut.GetAll(request, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<ValidationException>("Bad Search Term");
+    }
+
+    [Fact]
+    public async Task GetAll_ShouldReturnEmptyResult_WhenNoItemsAreFound()
+    {
+        // Arrange
+        GetAllAccountsRequest request = new()
+                                        {
+                                            UserName = "Test",
+                                            Page = 1,
+                                            PageSize = 5
+                                        };
+
+        AccountsResponse expectedResponse = new()
+                                            {
+                                                Items = [],
+                                                Page = 1,
+                                                PageSize = 5,
+                                                Total = 0
+                                            };
+
+        // Act
+        OkObjectResult result = (OkObjectResult)await _sut.GetAll(request, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.StatusCode.Should().Be(200);
+        result.Value.Should().BeEquivalentTo(expectedResponse);
+    }
+
+    [Fact]
+    public async Task GetAll_ShouldReturnResults_WhenItemsAreFound()
+    {
+        // Arrange
+        GetAllAccountsRequest request = new()
+                                        {
+                                            UserName = "Test",
+                                            Page = 1,
+                                            PageSize = 5
+                                        };
+
+        GetAllAccountsOptions requestOptions = request.ToOptions();
+
+        Random random = new();
+
+        List<Account> accounts = Enumerable.Range(5, random.Next(1, 15)).Select(x => new Account
+                                                                                     {
+                                                                                         Id = Guid.NewGuid(),
+                                                                                         FirstName = _faker.Person.FirstName,
+                                                                                         LastName = _faker.Person.LastName,
+                                                                                         Email = _faker.Person.Email,
+                                                                                         UserName = _faker.Internet.UserName(),
+                                                                                         Password = _faker.Internet.Password(),
+                                                                                         AccountRole = AccountRole.standard,
+                                                                                         AccountStatus = AccountStatus.active,
+                                                                                         CreatedUtc = DateTime.UtcNow,
+                                                                                         UpdatedUtc = DateTime.UtcNow
+                                                                                     }).ToList();
+
+        _AccountService.GetAllAsync(Arg.Any<GetAllAccountsOptions>(), CancellationToken.None).Returns(accounts);
+        _AccountService.GetCountAsync(requestOptions.UserName, CancellationToken.None).Returns(accounts.Count);
+
+        AccountsResponse expectedResponse = accounts.ToResponse(request.Page, request.PageSize, accounts.Count());
+
+        // Act
+        OkObjectResult results = (OkObjectResult)await _sut.GetAll(request, CancellationToken.None);
+
+        // Assert
+        results.Should().NotBeNull();
+        results.StatusCode.Should().Be(200);
+        results.Value.Should().BeEquivalentTo(expectedResponse);
     }
 }
