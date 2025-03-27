@@ -23,7 +23,7 @@ public class AccountService : IAccountService
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<bool> CreateAsync(Account account, CancellationToken token)
+    public async Task<bool> CreateAsync(Account account, CancellationToken token = default)
     {
         await _accountValidator.ValidateAndThrowAsync(account, token);
         account.CreatedUtc = _dateTimeProvider.GetUtcNow();

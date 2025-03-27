@@ -56,7 +56,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromMinutes(1))).WhenTypeIs<DateTime>());
+        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
 
     [SkipIfEnvironmentMissingFact]
@@ -85,7 +85,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromMinutes(1))).WhenTypeIs<DateTime>());
+        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
 
     [SkipIfEnivronmentMissingTheory]
@@ -145,7 +145,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         // Assert
         result.Should().NotBeEmpty();
         result.Should().BeEquivalentTo(expectedResult, options => options
-                                                                  .Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromMinutes(1)))
+                                                                  .Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1)))
                                                                   .WhenTypeIs<DateTime>());
     }
 
@@ -213,7 +213,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x=>x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromMinutes(1))).WhenTypeIs<DateTime>());
+        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x=>x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
     
     [SkipIfEnvironmentMissingFact]
@@ -242,7 +242,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x=>x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromMinutes(1))).WhenTypeIs<DateTime>());
+        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x=>x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
     
     
