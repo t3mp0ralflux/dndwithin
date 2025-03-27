@@ -24,6 +24,7 @@
       <ProjectReference Include="..\..\DNDWithin.Api\DNDWithin.Api.csproj" />
       <ProjectReference Include="..\..\DNDWithin.Application\DNDWithin.Application.csproj" />
       <ProjectReference Include="..\..\DNDWithin.Contracts\DNDWithin.Contracts.csproj" />
+      <ProjectReference Include="..\DNDWithin.Application.Tests.Integration\DNDWithin.Application.Tests.Integration.csproj" />
       <ProjectReference Include="..\Testing.Common\Testing.Common.csproj" />
     </ItemGroup>
 

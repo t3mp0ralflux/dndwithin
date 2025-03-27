@@ -19,7 +19,7 @@ public static class ContractMapping
                    Id = Guid.NewGuid(),
                    FirstName = request.FirstName,
                    LastName = request.LastName,
-                   UserName = request.UserName,
+                   Username = request.UserName,
                    Password = request.Password,
                    Email = request.Email
                };
@@ -33,7 +33,7 @@ public static class ContractMapping
                     FirstName = account.FirstName,
                     LastName = account.LastName,
                     Email = account.Email,
-                    UserName = account.UserName,
+                    UserName = account.Username,
                     AccountRole = (ctr.AccountRole)account.AccountRole,
                     AccountStatus = (ctr.AccountStatus)account.AccountStatus,
                     LastLogin = account.LastLoginUtc

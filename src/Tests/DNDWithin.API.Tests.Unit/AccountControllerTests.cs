@@ -3,6 +3,7 @@ using DNDWithin.Api.Controllers;
 using DNDWithin.Api.Mapping;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Services;
+using DNDWithin.Application.Tests.Integration;
 using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Responses.Account;
 using FluentAssertions;
@@ -38,7 +39,7 @@ public class AccountControllerTests
                                            FirstName = fakeAccount.FirstName,
                                            LastName = fakeAccount.LastName,
                                            Password = fakeAccount.Password,
-                                           UserName = fakeAccount.UserName
+                                           UserName = fakeAccount.Username
                                        };
         // Act
         Func<Task<BadRequestResult>> result = async () => (BadRequestResult)await _sut.Create(request, CancellationToken.None);
@@ -60,7 +61,7 @@ public class AccountControllerTests
                                            FirstName = fakeAccount.FirstName,
                                            LastName = fakeAccount.LastName,
                                            Password = fakeAccount.Password,
-                                           UserName = fakeAccount.UserName
+                                           UserName = fakeAccount.Username
                                        };
 
         AccountResponse expectedResponse = request.ToAccount().ToResponse();

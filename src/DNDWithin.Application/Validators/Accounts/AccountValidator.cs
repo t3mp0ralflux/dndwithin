@@ -13,7 +13,7 @@ public class AccountValidator : AbstractValidator<Account>
         _accountRepository = accountRepository;
         RuleFor(x => x.FirstName).NotEmpty();
         RuleFor(x => x.LastName).NotEmpty();
-        RuleFor(x => x.UserName).CustomAsync(ValidateUserName);
+        RuleFor(x => x.Username).CustomAsync(ValidateUserName);
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
         RuleFor(x => x.Password).NotEmpty();
     }
@@ -26,7 +26,7 @@ public class AccountValidator : AbstractValidator<Account>
             return false;
         }
         
-        Account? userNameExists = await _accountRepository.UserNameExistsAsync(userName, token);
+        Account? userNameExists = await _accountRepository.UsernameExistsAsync(userName, token);
 
         if (userNameExists is not null)
         {

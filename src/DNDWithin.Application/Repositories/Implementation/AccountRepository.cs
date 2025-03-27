@@ -30,7 +30,7 @@ public class AccountRepository : IAccountRepository
         _dbConnection = dbConnection;
     }
 
-    public async Task<bool> CreateAsync(Account account, CancellationToken token)
+    public async Task<bool> CreateAsync(Account account, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
         using IDbTransaction transaction = connection.BeginTransaction();
@@ -45,7 +45,7 @@ public class AccountRepository : IAccountRepository
         return result > 0;
     }
 
-    public async Task<Account?> UserNameExistsAsync(string userName, CancellationToken token = default)
+    public async Task<Account?> UsernameExistsAsync(string userName, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
