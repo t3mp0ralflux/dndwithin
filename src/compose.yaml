@@ -1,0 +1,10 @@
+services: 
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=dm
+      - POSTGRES_PASSWORD=swordcoast
+      - POSTGRES_DB=sql-db-dnd-dev
+    ports:
+      - '5432:5432'
