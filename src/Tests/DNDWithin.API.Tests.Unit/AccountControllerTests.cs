@@ -1,9 +1,8 @@
-﻿using Bogus;
-using DNDWithin.Api.Controllers;
+﻿using DNDWithin.Api.Controllers;
 using DNDWithin.Api.Mapping;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Services;
-using DNDWithin.Application.Tests.Integration;
+using DNDWithin.Contracts.Models;
 using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Responses.Account;
 using FluentAssertions;
@@ -12,6 +11,7 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Testing.Common;
 using ValidationException = FluentValidation.ValidationException;
+using ctr = DNDWithin.Contracts.Models;
 
 namespace DNDWithin.API.Tests.Unit;
 
@@ -30,8 +30,8 @@ public class AccountControllerTests
     public async Task Create_ShouldThrowException_WhenRequestIsMissingRequiredInformation()
     {
         // Arrange
+        Account fakeAccount = Fakes.GenerateAccount();
         _AccountService.CreateAsync(Arg.Any<Account>()).Throws(new ValidationException("Information is required"));
-        var fakeAccount = Fakes.GenerateAccount();
         
         AccountCreateRequest request = new()
                                        {
@@ -186,5 +186,58 @@ public class AccountControllerTests
         results.Should().NotBeNull();
         results.StatusCode.Should().Be(200);
         results.Value.Should().BeEquivalentTo(expectedResponse);
+    }
+
+    [Fact]
+    public async Task Update_ShouldReturnNotFound_WhenAccountIsNotFound()
+    {
+        // Arrange
+        Account account = Fakes.GenerateAccount();
+
+        var request = new AccountUpdateRequest()
+                      {
+                          FirstName = "New First",
+                          LastName = "New Last",
+                          AccountStatus = (ctr.AccountStatus)account.AccountStatus,
+                          AccountRole = (ctr.AccountRole)account.AccountRole
+                      };
+
+        _AccountService.UpdateAsync(Arg.Any<Account>(), CancellationToken.None).Returns((Account?)null);
+
+        // Act
+        var result = (NotFoundResult)await _sut.Update(account.Id, request, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(404);
+    }
+
+    [Fact]
+    public async Task Delete_ShouldReturnNotFound_WhenIdIsNotFound()
+    {
+        // Arrange
+        var missingId = Guid.NewGuid();
+        
+        _AccountService.DeleteAsync(missingId, CancellationToken.None).Returns(false);
+        
+        // Act
+        var result = (NotFoundResult)await _sut.Delete(missingId, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(404);
+    }
+
+    [Fact]
+    public async Task Delete_ShouldReturnNoContent_WhenIdIsFound()
+    {
+        // Arrange
+        var missingId = Guid.NewGuid();
+
+        _AccountService.DeleteAsync(missingId, CancellationToken.None).Returns(true);
+        
+        // Act
+        var result = (NoContentResult)await _sut.Delete(missingId, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(204);
     }
 }

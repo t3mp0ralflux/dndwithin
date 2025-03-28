@@ -1,4 +1,5 @@
-﻿using DNDWithin.Api;
+﻿using System.Text;
+using DNDWithin.Api;
 using DNDWithin.Application.Database;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -35,8 +36,15 @@ public class ApplicationApiFactory : WebApplicationFactory<IApiMarker>, IAsyncLi
     public async Task InitializeAsync()
     {
         await _dbContainer.StartAsync();
-        var scripts = await File.ReadAllTextAsync("../../../../../scripts/create-db.sql");
-        await _dbContainer.ExecScriptAsync(scripts);
+        // var scripts = await File.ReadAllTextAsync("../../../../../scripts/create-db.sql");
+        var sb = new StringBuilder();
+        foreach (var file in Directory.GetFiles("../../../../../scripts"))
+        {
+            var script = await File.ReadAllTextAsync(file);
+            sb.AppendLine(script);
+        }
+        
+        await _dbContainer.ExecScriptAsync(sb.ToString());
     }
 
     public async Task DisposeAsync()

@@ -1,7 +1,6 @@
 ﻿using Asp.Versioning;
 using DNDWithin.Api.Auth;
 using DNDWithin.Api.Mapping;
-using DNDWithin.Application.Models;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.Account;
@@ -60,10 +59,32 @@ public class AccountController : ControllerBase
         return Ok(response);
     }
 
+    [HttpPut(ApiEndpoints.Accounts.Update)]
+    public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] AccountUpdateRequest request, CancellationToken token)
+    {
+        Account account = request.ToAccount(id);
+        Account? result = await _accountService.UpdateAsync(account, token);
+
+        if (result is null)
+        {
+            return NotFound();
+        }
+
+        AccountResponse response = account.ToResponse();
+        return Ok(response);
+    }
+
     [Authorize(AuthConstants.AdminUserPolicyName)]
     [HttpDelete(ApiEndpoints.Accounts.Delete)]
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken token)
     {
-        return Ok("Deleted");
+        bool deleted = await _accountService.DeleteAsync(id, token);
+
+        if (!deleted)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
 }

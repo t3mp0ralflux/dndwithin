@@ -45,7 +45,17 @@ public class AccountRepository : IAccountRepository
         return result > 0;
     }
 
-    public async Task<Account?> UsernameExistsAsync(string userName, CancellationToken token = default)
+    public async Task<Account?> ExistsByIdAsync(Guid id, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+
+        Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition("""
+                                                                                                    select * from account where id = @id 
+                                                                                                    """, new { id }, cancellationToken: token));
+        return result;
+    }
+
+    public async Task<Account?> ExistsByUsernameAsync(string userName, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
@@ -55,13 +65,23 @@ public class AccountRepository : IAccountRepository
         return result;
     }
 
+    public async Task<Account?> ExistsByEmailAsync(string email, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+
+        Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition("""
+                                                                                                    select * from account where email = @email 
+                                                                                                    """, new { email }, cancellationToken: token));
+        return result;
+    }
+
     public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
         Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
-                                                                                                     select {AccountFields} from account where id = @id
-                                                                                                    """, new { id }, cancellationToken: token));
+                                                                                                      select {AccountFields} from account where id = @id
+                                                                                                     """, new { id }, cancellationToken: token));
 
         return result;
     }
@@ -112,10 +132,10 @@ public class AccountRepository : IAccountRepository
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
         return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
-                                                                                         select {AccountFields}
-                                                                                         from account
-                                                                                         where email = @email
-                                                                                         """, new { email }, cancellationToken: token));
+                                                                                          select {AccountFields}
+                                                                                          from account
+                                                                                          where email = @email
+                                                                                          """, new { email }, cancellationToken: token));
     }
 
     public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
@@ -126,5 +146,30 @@ public class AccountRepository : IAccountRepository
                                                                                           from account
                                                                                           where username = @userName
                                                                                           """, new { userName }, cancellationToken: token));
+    }
+
+    public async Task<bool> UpdateAsync(Account account, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        using var transaction = connection.BeginTransaction();
+        var result = await connection.ExecuteAsync(new CommandDefinition("""
+                                                                         update account
+                                                                         set first_name = @FirstName, last_name = @LastName, account_status = @AccountStatus, account_role = @AccountRole
+                                                                         where id = @Id
+                                                                         """, account, cancellationToken: token));
+        transaction.Commit();
+
+        return result > 0;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
+                                                                         delete from accounts
+                                                                         where id = @id
+                                                                         """, new { id }, cancellationToken: token));
+
+        return result > 0;
     }
 }

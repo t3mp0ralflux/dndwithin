@@ -25,6 +25,18 @@ public static class ContractMapping
                };
     }
 
+    public static Account ToAccount(this AccountUpdateRequest request, Guid id)
+    {
+        return new Account()
+               {
+                   Id = id,
+                   FirstName = request.FirstName,
+                   LastName = request.LastName,
+                   AccountStatus = (AccountStatus)request.AccountStatus,
+                   AccountRole = (AccountRole)request.AccountRole,
+               };
+    }
+
     public static AccountResponse ToResponse(this Account account)
     {
         return new AccountResponse
