@@ -24,7 +24,7 @@ builder.Services.AddAuthentication(x =>
     x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(x =>
 {
-    x.TokenValidationParameters = new TokenValidationParameters()
+    x.TokenValidationParameters = new TokenValidationParameters
                                   {
                                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!)),
                                       ValidateIssuerSigningKey = true,
@@ -37,11 +37,11 @@ builder.Services.AddAuthentication(x =>
 });
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AuthConstants.AdminUserPolicyName, p => p.RequireClaim(AuthConstants.AdminUserClaimName, "true"))
-    .AddPolicy(AuthConstants.TrustedUserPolicyName, p => p.RequireAssertion(c => 
-        c.User.HasClaim(m => m is { Type: AuthConstants.AdminUserClaimName, Value: "true" }) ||
-        c.User.HasClaim(m => m is { Type: AuthConstants.TrustedUserClaimName, Value: "true" })
-    ));
+       .AddPolicy(AuthConstants.AdminUserPolicyName, p => p.RequireClaim(AuthConstants.AdminUserClaimName, "true"))
+       .AddPolicy(AuthConstants.TrustedUserPolicyName, p => p.RequireAssertion(c =>
+           c.User.HasClaim(m => m is { Type: AuthConstants.AdminUserClaimName, Value: "true" }) ||
+           c.User.HasClaim(m => m is { Type: AuthConstants.TrustedUserClaimName, Value: "true" })
+       ));
 
 builder.Services.AddApiVersioning(x =>
 {

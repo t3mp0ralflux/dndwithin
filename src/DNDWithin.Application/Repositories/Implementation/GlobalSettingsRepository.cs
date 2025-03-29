@@ -64,6 +64,6 @@ public class GlobalSettingsRepository : IGlobalSettingsRepository
                                                                             select count(id)
                                                                             from globalsettings
                                                                             where (@name is null or name like ('%' || @name || '%'))
-                                                                            """, new { name }, cancellationToken:token));
+                                                                            """, new { name }, cancellationToken: token));
     }
 }

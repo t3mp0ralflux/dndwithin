@@ -8,7 +8,7 @@ public class Account
     public string? Username { get; init; }
     public string? Email { get; set; }
     public string? Password { get; set; }
-    
+
     // managed by API
     public AccountStatus AccountStatus { get; set; }
     public AccountRole AccountRole { get; set; }

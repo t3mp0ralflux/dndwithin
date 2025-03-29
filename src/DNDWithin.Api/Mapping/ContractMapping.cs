@@ -12,9 +12,10 @@ namespace DNDWithin.Api.Mapping;
 public static class ContractMapping
 {
     #region Accounts
+
     public static Account ToAccount(this AccountCreateRequest request)
     {
-        return new Account()
+        return new Account
                {
                    Id = Guid.NewGuid(),
                    FirstName = request.FirstName,
@@ -27,13 +28,13 @@ public static class ContractMapping
 
     public static Account ToAccount(this AccountUpdateRequest request, Guid id)
     {
-        return new Account()
+        return new Account
                {
                    Id = id,
                    FirstName = request.FirstName,
                    LastName = request.LastName,
                    AccountStatus = (AccountStatus)request.AccountStatus,
-                   AccountRole = (AccountRole)request.AccountRole,
+                   AccountRole = (AccountRole)request.AccountRole
                };
     }
 
@@ -41,20 +42,20 @@ public static class ContractMapping
     {
         return new AccountResponse
                {
-                    Id = account.Id,
-                    FirstName = account.FirstName,
-                    LastName = account.LastName,
-                    Email = account.Email,
-                    UserName = account.Username,
-                    AccountRole = (ctr.AccountRole)account.AccountRole,
-                    AccountStatus = (ctr.AccountStatus)account.AccountStatus,
-                    LastLogin = account.LastLoginUtc
+                   Id = account.Id,
+                   FirstName = account.FirstName,
+                   LastName = account.LastName,
+                   Email = account.Email,
+                   UserName = account.Username,
+                   AccountRole = (ctr.AccountRole)account.AccountRole,
+                   AccountStatus = (ctr.AccountStatus)account.AccountStatus,
+                   LastLogin = account.LastLoginUtc
                };
     }
-    
+
     public static AccountsResponse ToResponse(this IEnumerable<Account> accounts, int page, int pageSize, int totalCount)
     {
-        return new AccountsResponse()
+        return new AccountsResponse
                {
                    Items = accounts.Select(ToResponse),
                    Page = page,
@@ -71,7 +72,7 @@ public static class ContractMapping
             sortField = "last_login_utc";
         }
 
-        return new GetAllAccountsOptions()
+        return new GetAllAccountsOptions
                {
                    UserName = request.UserName,
                    AccountStatus = (AccountStatus?)request.AccountStatus,
@@ -82,6 +83,7 @@ public static class ContractMapping
                    PageSize = request.PageSize
                };
     }
+
     #endregion
 
     #region GlobalSettings
@@ -90,7 +92,7 @@ public static class ContractMapping
     {
         string? sortField = request.SortBy?.Trim('+', '-');
 
-        return new GetAllGlobalSettingsOptions()
+        return new GetAllGlobalSettingsOptions
                {
                    Name = request.Name,
                    SortField = sortField,
@@ -102,7 +104,7 @@ public static class ContractMapping
 
     public static GlobalSettingResponse ToResponse(this GlobalSetting globalSetting)
     {
-        return new GlobalSettingResponse()
+        return new GlobalSettingResponse
                {
                    Id = globalSetting.Id,
                    Name = globalSetting.Name,
@@ -112,7 +114,7 @@ public static class ContractMapping
 
     public static GlobalSettingsResponse ToResponse(this IEnumerable<GlobalSetting> settings, int page, int pageSize, int totalCount)
     {
-        return new GlobalSettingsResponse()
+        return new GlobalSettingsResponse
                {
                    Items = settings.Select(ToResponse),
                    Page = page,
@@ -120,5 +122,6 @@ public static class ContractMapping
                    Total = totalCount
                };
     }
+
     #endregion
 }

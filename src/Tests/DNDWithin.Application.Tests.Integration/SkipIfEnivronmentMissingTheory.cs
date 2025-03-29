@@ -1,7 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
-using Org.BouncyCastle.Crypto.Digests;
-using Xunit.Sdk;
 
 namespace DNDWithin.Application.Tests.Integration;
 
@@ -19,7 +16,7 @@ public sealed class SkipIfEnivronmentMissingTheory : TheoryAttribute
     {
         try
         {
-            Process process = new Process
+            Process process = new()
                               {
                                   StartInfo = new ProcessStartInfo
                                               {
@@ -40,5 +37,4 @@ public sealed class SkipIfEnivronmentMissingTheory : TheoryAttribute
             return false;
         }
     }
-    
 }

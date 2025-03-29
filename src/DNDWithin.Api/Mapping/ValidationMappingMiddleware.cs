@@ -21,12 +21,12 @@ public class ValidationMappingMiddleware
         catch (ValidationException ex)
         {
             context.Response.StatusCode = 400;
-            ValidationFailureResponse validationFailureResponse = new ValidationFailureResponse()
+            ValidationFailureResponse validationFailureResponse = new()
                                                                   {
-                                                                      Errors = ex.Errors.Select(x => new ValidationResponse()
+                                                                      Errors = ex.Errors.Select(x => new ValidationResponse
                                                                                                      {
                                                                                                          PropertyName = x.PropertyName,
-                                                                                                         Message = x.ErrorMessage,
+                                                                                                         Message = x.ErrorMessage
                                                                                                      })
                                                                   };
 

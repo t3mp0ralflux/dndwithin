@@ -7,7 +7,7 @@ public class GetAllGlobalSettingsOptionsValidator : AbstractValidator<GetAllGlob
 {
     public static readonly string[] AcceptableSortFields =
     [
-        "name",
+        "name"
     ];
 
     public GetAllGlobalSettingsOptionsValidator()

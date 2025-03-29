@@ -13,24 +13,32 @@ public static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         #region Repositories
+
         services.AddSingleton<IAccountRepository, AccountRepository>();
         services.AddSingleton<IGlobalSettingsRepository, GlobalSettingsRepository>();
+
         #endregion
 
         #region Services
+
         services.AddSingleton<IAccountService, AccountService>();
         services.AddSingleton<IGlobalSettingsService, GlobalSettingsService>();
+
         #endregion
 
         #region Validators
+
         services.AddValidatorsFromAssemblyContaining<IApplicationMarker>(ServiceLifetime.Singleton); // set to singleton as it'll be one.
+
         #endregion
 
         #region Other
+
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
+
         #endregion
-        
+
         return services;
     }
 

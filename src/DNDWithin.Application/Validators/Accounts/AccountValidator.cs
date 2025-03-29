@@ -7,7 +7,7 @@ namespace DNDWithin.Application.Validators.Accounts;
 public class AccountValidator : AbstractValidator<Account>
 {
     private readonly IAccountRepository _accountRepository;
-    
+
     public AccountValidator(IAccountRepository accountRepository)
     {
         _accountRepository = accountRepository;
@@ -25,7 +25,7 @@ public class AccountValidator : AbstractValidator<Account>
             context.AddFailure("Username cannot be empty");
             return false;
         }
-        
+
         Account? userNameExists = await _accountRepository.ExistsByUsernameAsync(userName, token);
 
         if (userNameExists is not null)
@@ -33,7 +33,7 @@ public class AccountValidator : AbstractValidator<Account>
             context.AddFailure("Username already in use");
             return false;
         }
-        
+
         return true;
     }
 

@@ -1,5 +1,4 @@
-﻿using DNDWithin.Application.Models;
-using DNDWithin.Application.Models.Accounts;
+﻿using DNDWithin.Application.Models.Accounts;
 
 namespace DNDWithin.Application.Services;
 

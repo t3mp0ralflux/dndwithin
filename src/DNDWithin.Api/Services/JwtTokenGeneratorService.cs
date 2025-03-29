@@ -41,7 +41,7 @@ public class JwtTokenGeneratorService : IJwtTokenGeneratorService
             new(JwtRegisteredClaimNames.Sub, request.Email),
             new(JwtRegisteredClaimNames.Email, request.Email),
             new(AuthConstants.AdminUserClaimName, (account.AccountRole == AccountRole.admin).ToString().ToLower()),
-            new(AuthConstants.TrustedUserClaimName, (account.AccountRole is AccountRole.admin or AccountRole.trusted).ToString().ToLower()),
+            new(AuthConstants.TrustedUserClaimName, (account.AccountRole is AccountRole.admin or AccountRole.trusted).ToString().ToLower())
         ];
 
         SecurityTokenDescriptor tokenDescriptor = new()

@@ -19,6 +19,25 @@ public class ApplicationApiFactory : WebApplicationFactory<IApiMarker>, IAsyncLi
                                                         .WithPassword("tests")
                                                         .Build();
 
+    public async Task InitializeAsync()
+    {
+        await _dbContainer.StartAsync();
+        // var scripts = await File.ReadAllTextAsync("../../../../../scripts/create-db.sql");
+        StringBuilder? sb = new();
+        foreach (string file in Directory.GetFiles("../../../../../scripts"))
+        {
+            string script = await File.ReadAllTextAsync(file);
+            sb.AppendLine(script);
+        }
+
+        await _dbContainer.ExecScriptAsync(sb.ToString());
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _dbContainer.DisposeAsync();
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureLogging(logging =>
@@ -31,24 +50,5 @@ public class ApplicationApiFactory : WebApplicationFactory<IApiMarker>, IAsyncLi
             services.RemoveAll<IDbConnectionFactory>();
             services.AddSingleton<IDbConnectionFactory>(_ => new NpgsqlConnectionFactory(_dbContainer.GetConnectionString()));
         });
-    }
-
-    public async Task InitializeAsync()
-    {
-        await _dbContainer.StartAsync();
-        // var scripts = await File.ReadAllTextAsync("../../../../../scripts/create-db.sql");
-        var sb = new StringBuilder();
-        foreach (var file in Directory.GetFiles("../../../../../scripts"))
-        {
-            var script = await File.ReadAllTextAsync(file);
-            sb.AppendLine(script);
-        }
-        
-        await _dbContainer.ExecScriptAsync(sb.ToString());
-    }
-
-    public async Task DisposeAsync()
-    {
-        await _dbContainer.DisposeAsync();
     }
 }

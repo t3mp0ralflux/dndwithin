@@ -14,12 +14,12 @@ public static class Fakes
                                      .RuleFor(x => x.Username, f => string.IsNullOrWhiteSpace(userName) ? f.Internet.UserName() : userName)
                                      .RuleFor(x => x.Email, f => f.Person.Email)
                                      .RuleFor(x => x.Password, f => f.Internet.Password())
-                                     .RuleFor(x=>x.AccountStatus, f=> status)
-                                     .RuleFor(x=>x.AccountRole, f=> role)
-                                     .RuleFor(x=>x.CreatedUtc, f=>f.Date.Recent())
-                                     .RuleFor(x=>x.UpdatedUtc, f=>f.Date.Recent())
-                                     .RuleFor(x=>x.LastLoginUtc, f=>f.Date.Recent())
-                                     .RuleFor(x=>x.DeletedUtc, f=> isDeleted ? DateTime.UtcNow : null);
+                                     .RuleFor(x => x.AccountStatus, f => status)
+                                     .RuleFor(x => x.AccountRole, f => role)
+                                     .RuleFor(x => x.CreatedUtc, f => f.Date.Recent())
+                                     .RuleFor(x => x.UpdatedUtc, f => f.Date.Recent())
+                                     .RuleFor(x => x.LastLoginUtc, f => f.Date.Recent())
+                                     .RuleFor(x => x.DeletedUtc, f => isDeleted ? DateTime.UtcNow : null);
 
         return fakeAccount;
     }

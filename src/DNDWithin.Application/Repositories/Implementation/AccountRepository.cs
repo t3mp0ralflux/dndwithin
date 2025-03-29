@@ -9,8 +9,8 @@ namespace DNDWithin.Application.Repositories.Implementation;
 
 public class AccountRepository : IAccountRepository
 {
-    private readonly IDbConnectionFactory _dbConnection;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IDbConnectionFactory _dbConnection;
 
     private readonly string AccountFields = """
                                             id, 
@@ -154,12 +154,20 @@ public class AccountRepository : IAccountRepository
     public async Task<bool> UpdateAsync(Account account, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
-        using var transaction = connection.BeginTransaction();
-        var result = await connection.ExecuteAsync(new CommandDefinition("""
+        using IDbTransaction transaction = connection.BeginTransaction();
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
                                                                          update account
-                                                                         set first_name = @FirstName, last_name = @LastName, account_status = @AccountStatus, account_role = @AccountRole
+                                                                         set first_name = @FirstName, last_name = @LastName, account_status = @AccountStatus, account_role = @AccountRole, updated_utc = @UpdatedUtc
                                                                          where id = @Id
-                                                                         """, account, cancellationToken: token));
+                                                                         """, new
+                                                                              {
+                                                                                  account.Id,
+                                                                                  account.FirstName,
+                                                                                  account.LastName,
+                                                                                  account.AccountStatus,
+                                                                                  account.AccountRole,
+                                                                                  UpdatedUtc = _dateTimeProvider.GetUtcNow()
+                                                                              }, cancellationToken: token));
         transaction.Commit();
 
         return result > 0;
@@ -168,11 +176,11 @@ public class AccountRepository : IAccountRepository
     public async Task<bool> DeleteAsync(Guid id, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
-        int result = await connection.ExecuteAsync(new CommandDefinition($"""
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
                                                                          update account
-                                                                         set deleted_utc = {_dateTimeProvider.GetUtcNow()}
+                                                                         set deleted_utc = @DeletedUtc
                                                                          where id = @id
-                                                                         """, new { id }, cancellationToken: token));
+                                                                         """, new { id, DeletedUtc = _dateTimeProvider.GetUtcNow() }, cancellationToken: token));
 
         return result > 0;
     }

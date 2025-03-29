@@ -10,8 +10,8 @@ namespace DNDWithin.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAccountService _accountService;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGeneratorService _jwtTokenGeneratorService;
+    private readonly IPasswordHasher _passwordHasher;
 
     public AuthController(IAccountService accountService, IPasswordHasher passwordHasher, IJwtTokenGeneratorService jwtTokenGeneratorService)
     {

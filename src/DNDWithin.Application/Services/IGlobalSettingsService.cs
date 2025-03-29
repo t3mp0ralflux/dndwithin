@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using DNDWithin.Application.Models.Accounts;
+﻿using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Models.GlobalSettings;
 
 namespace DNDWithin.Application.Services;

@@ -16,7 +16,7 @@ public sealed class SkipIfEnvironmentMissingFact : FactAttribute
     {
         try
         {
-            Process process = new Process
+            Process process = new()
                               {
                                   StartInfo = new ProcessStartInfo
                                               {

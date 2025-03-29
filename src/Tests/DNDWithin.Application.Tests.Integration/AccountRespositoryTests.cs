@@ -1,17 +1,26 @@
-﻿using DNDWithin.Application.Database;
+﻿using DNDWithin.Api.Mapping;
+using DNDWithin.Application.Database;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Repositories.Implementation;
+using DNDWithin.Application.Services.Implementation;
+using DNDWithin.Contracts.Requests.Account;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using Testing.Common;
+using ctr = DNDWithin.Contracts.Models;
 
 namespace DNDWithin.Application.Tests.Integration;
 
 public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 {
+    public readonly IDateTimeProvider DateTimeProvider = Substitute.For<IDateTimeProvider>();
+
     public AccountRespositoryTests(ApplicationApiFactory apiFactory)
     {
-        _sut = new AccountRepository(apiFactory.Services.GetRequiredService<IDbConnectionFactory>());
+        IDbConnectionFactory connectionFactory = apiFactory.Services.GetRequiredService<IDbConnectionFactory>();
+
+        _sut = new AccountRepository(connectionFactory, DateTimeProvider);
     }
 
     public AccountRepository _sut { get; set; }
@@ -160,12 +169,12 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         }
 
         // Act
-        var result = await _sut.GetCountAsync("Bingus");
+        int result = await _sut.GetCountAsync("Bingus");
 
         // Assert
         result.Should().Be(0);
     }
-    
+
     [SkipIfEnvironmentMissingFact]
     public async Task GetCountAsync_ShouldReturnCount_WhenItemsAreFound()
     {
@@ -176,12 +185,12 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
             await _sut.CreateAsync(account);
         }
 
-        var random = new Random();
+        Random random = new();
 
-        var accountToFind = accounts[random.Next(accounts.Count - 1)];
+        Account accountToFind = accounts[random.Next(accounts.Count - 1)];
 
         // Act
-        var result = await _sut.GetCountAsync(accountToFind.Username);
+        int result = await _sut.GetCountAsync(accountToFind.Username);
 
         // Assert
         result.Should().Be(1);
@@ -191,59 +200,152 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     public async Task GetByEmailAsync_ShouldReturnNull_WhenEmailIsNotFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account? account = Fakes.GenerateAccount();
 
         await _sut.CreateAsync(account);
         // Act
-        var result = await _sut.GetByEmailAsync("Bingus");
+        Account? result = await _sut.GetByEmailAsync("Bingus");
 
         // Assert
         result.Should().BeNull();
     }
-    
+
     [SkipIfEnvironmentMissingFact]
     public async Task GetByEmailAsync_ShouldReturnAccount_WhenEmailIsFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account? account = Fakes.GenerateAccount();
 
         await _sut.CreateAsync(account);
         // Act
-        var result = await _sut.GetByEmailAsync(account.Email);
+        Account? result = await _sut.GetByEmailAsync(account.Email);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x=>x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
+        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
-    
+
     [SkipIfEnvironmentMissingFact]
     public async Task GetByUsernameAsync_ShouldReturnNull_WhenUsernameIsNotFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account? account = Fakes.GenerateAccount();
 
         await _sut.CreateAsync(account);
         // Act
-        var result = await _sut.GetByUsernameAsync("Bingus");
+        Account? result = await _sut.GetByUsernameAsync("Bingus");
 
         // Assert
         result.Should().BeNull();
     }
-    
+
     [SkipIfEnvironmentMissingFact]
     public async Task GetByUsernameAsync_ShouldReturnAccount_WhenUsernameIsFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account? account = Fakes.GenerateAccount();
 
         await _sut.CreateAsync(account);
         // Act
-        var result = await _sut.GetByUsernameAsync(account.Username);
+        Account? result = await _sut.GetByUsernameAsync(account.Username);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x=>x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
+        result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
-    
-    
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task UpdateAsync_ShouldReturnFalse_WhenAccountIsNotUpdated()
+    {
+        // Arrange
+        Account account = Fakes.GenerateAccount();
+
+        // Act
+        bool result = await _sut.UpdateAsync(account, CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task UpdateAsync_ShouldReturnTrue_WhenAccountIsUpdated()
+    {
+        // Arrange
+        DateTime now = DateTime.UtcNow;
+        Account account = Fakes.GenerateAccount(AccountStatus.active, AccountRole.standard);
+
+        await _sut.CreateAsync(account, CancellationToken.None);
+
+        DateTimeProvider.GetUtcNow().Returns(now);
+
+        AccountUpdateRequest request = new()
+                                       {
+                                           FirstName = "Updated First Name",
+                                           LastName = "Updated Last Name",
+                                           AccountStatus = ctr.AccountStatus.banned,
+                                           AccountRole = ctr.AccountRole.trusted
+                                       };
+
+        Account updatedAccount = request.ToAccount(account.Id);
+
+        // Act
+        bool result = await _sut.UpdateAsync(updatedAccount, CancellationToken.None);
+
+        // Assert
+        result.Should().BeTrue();
+
+        Account? updatedRecord = await _sut.GetByIdAsync(account.Id);
+
+        updatedRecord.Should().NotBeNull();
+        updatedRecord.FirstName.Should().Be(request.FirstName);
+        updatedRecord.LastName.Should().Be(request.LastName);
+        updatedRecord.AccountStatus.Should().Be((AccountStatus)request.AccountStatus);
+        updatedRecord.AccountRole.Should().Be((AccountRole)request.AccountRole);
+        updatedRecord.UpdatedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
+
+        updatedRecord.Should().BeEquivalentTo(account, options =>
+        {
+            options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>();
+            options.Excluding(x => x.FirstName);
+            options.Excluding(x => x.LastName);
+            options.Excluding(x => x.AccountRole);
+            options.Excluding(x => x.AccountStatus);
+            options.Excluding(x => x.UpdatedUtc);
+
+            return options;
+        });
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task DeleteAsync_ShouldReturnFalse_WhenAccountIsNotDeleted()
+    {
+        // Arrange
+
+        // Act
+        bool result = await _sut.DeleteAsync(Guid.NewGuid(), CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ShouldReturnTrue_WhenAccountIsDeleted()
+    {
+        // Arrange
+        DateTime now = DateTime.UtcNow;
+        Account account = Fakes.GenerateAccount();
+
+        await _sut.CreateAsync(account, CancellationToken.None);
+        DateTimeProvider.GetUtcNow().Returns(now);
+
+        // Act
+        bool result = await _sut.DeleteAsync(account.Id, CancellationToken.None);
+
+        // Assert
+        result.Should().BeTrue();
+
+        Account? deletedRecord = await _sut.GetByIdAsync(account.Id);
+        deletedRecord.Should().NotBeNull();
+        deletedRecord.DeletedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
+    }
 }

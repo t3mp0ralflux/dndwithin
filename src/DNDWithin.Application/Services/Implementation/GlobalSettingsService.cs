@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using DNDWithin.Application.Models.Accounts;
+﻿using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Models.GlobalSettings;
 using DNDWithin.Application.Repositories;
 using FluentValidation;
@@ -23,7 +22,7 @@ public class GlobalSettingsService : IGlobalSettingsService
     {
         throw new NotImplementedException();
     }
-    
+
     public async Task<IEnumerable<GlobalSetting>> GetAllAsync(GetAllGlobalSettingsOptions options, CancellationToken token = default)
     {
         await _optionsValidator.ValidateAndThrowAsync(options, token);
@@ -35,7 +34,7 @@ public class GlobalSettingsService : IGlobalSettingsService
     {
         return await _globalSettingsRepository.GetCountAsync(name, token);
     }
-    
+
     public async Task<bool> GetSettingAsync(string name, bool defaultValue, CancellationToken token = default)
     {
         GlobalSetting? setting = await _globalSettingsRepository.GetSetting(name, token);

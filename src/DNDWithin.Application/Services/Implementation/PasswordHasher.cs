@@ -4,12 +4,12 @@ namespace DNDWithin.Application.Services.Implementation;
 
 public class PasswordHasher : IPasswordHasher
 {
-    private const int SaltSize = 128 / 8;
     private const int HashSize = 256 / 8;
     private const int Iterations = 100000;
-    
+    private const int SaltSize = 128 / 8;
+
     private readonly HashAlgorithmName Algorithm = HashAlgorithmName.SHA512;
-    
+
     public string Hash(string password)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);

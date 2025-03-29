@@ -2,5 +2,8 @@
 
 public class DateTimeProvider : IDateTimeProvider
 {
-    public DateTime GetUtcNow() => DateTime.UtcNow;
+    public DateTime GetUtcNow()
+    {
+        return DateTime.UtcNow;
+    }
 }

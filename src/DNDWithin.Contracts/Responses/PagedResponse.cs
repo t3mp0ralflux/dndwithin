@@ -1,6 +1,4 @@
-﻿using System.Security.Principal;
-
-namespace DNDWithin.Contracts.Responses;
+﻿namespace DNDWithin.Contracts.Responses;
 
 public class PagedResponse<TResponse>
 {
@@ -8,5 +6,5 @@ public class PagedResponse<TResponse>
     public required int Page { get; init; }
     public required int PageSize { get; init; }
     public required int Total { get; set; }
-    public bool HasNextPage => Total > (Page * PageSize);
+    public bool HasNextPage => Total > Page * PageSize;
 }
