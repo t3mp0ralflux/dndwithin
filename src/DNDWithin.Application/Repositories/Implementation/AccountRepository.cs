@@ -3,12 +3,14 @@ using Dapper;
 using DNDWithin.Application.Database;
 using DNDWithin.Application.Models;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Services.Implementation;
 
 namespace DNDWithin.Application.Repositories.Implementation;
 
 public class AccountRepository : IAccountRepository
 {
     private readonly IDbConnectionFactory _dbConnection;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     private readonly string AccountFields = """
                                             id, 
@@ -25,9 +27,10 @@ public class AccountRepository : IAccountRepository
                                             account_role as accountrole 
                                             """;
 
-    public AccountRepository(IDbConnectionFactory dbConnection)
+    public AccountRepository(IDbConnectionFactory dbConnection, IDateTimeProvider dateTimeProvider)
     {
         _dbConnection = dbConnection;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<bool> CreateAsync(Account account, CancellationToken token = default)
@@ -165,8 +168,9 @@ public class AccountRepository : IAccountRepository
     public async Task<bool> DeleteAsync(Guid id, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
-        int result = await connection.ExecuteAsync(new CommandDefinition("""
-                                                                         delete from accounts
+        int result = await connection.ExecuteAsync(new CommandDefinition($"""
+                                                                         update account
+                                                                         set deleted_utc = {_dateTimeProvider.GetUtcNow()}
                                                                          where id = @id
                                                                          """, new { id }, cancellationToken: token));
 
