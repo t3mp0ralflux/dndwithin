@@ -16,9 +16,16 @@ public class GlobalSettingsRepository : IGlobalSettingsRepository
         _connectionFactory = connectionFactory;
     }
 
-    public async Task<bool> CreateSetting(string name, string value, CancellationToken token = default)
+
+    public async Task<bool> CreateSetting(GlobalSetting setting, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        using IDbConnection connection = await _connectionFactory.CreateConnectionAsync(token);
+        var result = await connection.ExecuteAsync(new CommandDefinition("""
+                                                                         insert into globalsettings(id, name, value)
+                                                                         values(@id, @name, @value)
+                                                                         """, setting, cancellationToken: token));
+
+        return result > 0;
     }
 
     public async Task<GlobalSetting?> GetSetting(string name, CancellationToken token = default)

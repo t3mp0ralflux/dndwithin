@@ -18,9 +18,11 @@ public class GlobalSettingsService : IGlobalSettingsService
         _optionsValidator = optionsValidator;
     }
 
-    public Task<bool> CreateSettingAsync(string name, string value, CancellationToken token = default)
+    public async Task<bool> CreateSettingAsync(GlobalSetting setting, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        await _globalSettingValidator.ValidateAndThrowAsync(setting, token);
+
+        return await _globalSettingsRepository.CreateSetting(setting, token);
     }
 
     public async Task<IEnumerable<GlobalSetting>> GetAllAsync(GetAllGlobalSettingsOptions options, CancellationToken token = default)
@@ -35,48 +37,37 @@ public class GlobalSettingsService : IGlobalSettingsService
         return await _globalSettingsRepository.GetCountAsync(name, token);
     }
 
-    public async Task<bool> GetSettingAsync(string name, bool defaultValue, CancellationToken token = default)
+    public async Task<GlobalSetting?> GetSettingAsync(string name, bool defaultValue, CancellationToken token = default)
     {
         GlobalSetting? setting = await _globalSettingsRepository.GetSetting(name, token);
 
-        bool success = bool.TryParse(setting?.Value, out bool result);
-
-        return success ? result : defaultValue;
+        return setting;
     }
 
-    public async Task<Guid> GetSettingAsync(string name, Guid defaultValue, CancellationToken token = default)
+    public async Task<T?> GetSettingAsync<T>(string name, T? defaultValue, CancellationToken token = default)
     {
         GlobalSetting? setting = await _globalSettingsRepository.GetSetting(name, token);
 
-        bool success = Guid.TryParse(setting?.Value, out Guid result);
-
-        return success ? result : defaultValue;
-    }
-
-    public async Task<int> GetSettingAsync(string name, int defaultValue, CancellationToken token = default)
-    {
-        GlobalSetting? setting = await _globalSettingsRepository.GetSetting(name, token);
-
-        bool success = int.TryParse(setting?.Value, out int result);
-
-        return success ? result : defaultValue;
-    }
-
-    public async Task<double> GetSettingAsync(string name, double defaultValue, CancellationToken token = default)
-    {
-        GlobalSetting? setting = await _globalSettingsRepository.GetSetting(name, token);
-
-        bool success = double.TryParse(setting?.Value, out double result);
-
-        return success ? result : defaultValue;
-    }
-
-    public async Task<DateTime> GetSettingAsync(string name, DateTime defaultValue, CancellationToken token = default)
-    {
-        GlobalSetting? setting = await _globalSettingsRepository.GetSetting(name, token);
-
-        bool success = DateTime.TryParse(setting?.Value, out DateTime result);
-
-        return success ? result : defaultValue;
+        if (setting is null)
+        {
+            return defaultValue;
+        }
+        
+        try
+        {
+            Type? type = Nullable.GetUnderlyingType(typeof(T));
+            if (type is null)
+            {
+                return defaultValue;
+            }
+            
+            return (T)Convert.ChangeType(setting.Name, type);
+            
+        }
+        catch(Exception ex)
+        {
+            // TODO:MAYBE: log this?
+            return defaultValue;
+        }
     }
 }

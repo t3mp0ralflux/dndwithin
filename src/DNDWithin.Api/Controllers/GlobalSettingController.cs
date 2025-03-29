@@ -18,10 +18,22 @@ public class GlobalSettingController : ControllerBase
         _globalSettingsService = globalSettingsService;
     }
 
+    [HttpPost(ApiEndpoints.GlobalSettings.Create)]
+    public async Task<IActionResult> Create([FromBody] GlobalSettingCreateRequest createRequest, CancellationToken token)
+    {
+        GlobalSetting setting = createRequest.ToGlobalSetting();
+
+        await _globalSettingsService.CreateSettingAsync(setting, token);
+
+        GlobalSettingResponse response = setting.ToResponse();
+
+        return CreatedAtAction(nameof(Get), new { response.Id }, response);
+    }
+
     [HttpGet(ApiEndpoints.GlobalSettings.Get)]
     public async Task<IActionResult> Get([FromRoute] string name, CancellationToken token)
     {
-        bool setting = await _globalSettingsService.GetSettingAsync(name, false, token);
+        GlobalSetting? setting = await _globalSettingsService.GetSettingAsync(name, false, token);
 
         return Ok(setting);
     }

@@ -1,7 +1,7 @@
 ﻿namespace DNDWithin.Contracts.Requests.GlobalSetting;
 
-public class GlobalSettingCreateRequest<T>
+public class GlobalSettingCreateRequest
 {
     public required string Name { get; set; }
-    public required T Value { get; set; }
+    public required string Value { get; set; }
 }

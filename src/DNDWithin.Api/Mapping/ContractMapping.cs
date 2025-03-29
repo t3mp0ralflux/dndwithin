@@ -5,6 +5,7 @@ using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Requests.GlobalSetting;
 using DNDWithin.Contracts.Responses.Account;
 using DNDWithin.Contracts.Responses.GlobalSetting;
+using Microsoft.AspNetCore.WebUtilities;
 using ctr = DNDWithin.Contracts.Models;
 
 namespace DNDWithin.Api.Mapping;
@@ -87,6 +88,16 @@ public static class ContractMapping
     #endregion
 
     #region GlobalSettings
+
+    public static GlobalSetting ToGlobalSetting(this GlobalSettingCreateRequest request)
+    {
+        return new GlobalSetting()
+               {
+                   Id = Guid.NewGuid(),
+                   Name = request.Name,
+                   Value = request.Value
+               };
+    }
 
     public static GetAllGlobalSettingsOptions ToOptions(this GetAllGlobalSettingsRequest request)
     {
