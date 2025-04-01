@@ -23,6 +23,19 @@ create table if not exists accountactivation(
     UNIQUE(account_id)
 );
 
+create table if not exists email(
+    id UUID primary key,
+    account_id_sender UUID references account(id),
+    account_id_receiver UUID references account(id),
+    should_send boolean not null,
+    sent_utc timestamp null,
+    send_after_utc timestamp not null,
+    sender_email varchar(50) not null,
+    recipient_email varchar(50) not null,   
+    body varchar not null,
+    response_log varchar null
+);
+
 create table if not exists globalsettings (
     id UUID primary key,
     name varchar not null,

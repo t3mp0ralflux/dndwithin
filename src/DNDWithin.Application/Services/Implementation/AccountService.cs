@@ -1,4 +1,5 @@
 ﻿using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.System;
 using DNDWithin.Application.Repositories;
 using FluentValidation;
 
@@ -12,8 +13,9 @@ public class AccountService : IAccountService
     private readonly IGlobalSettingsService _globalSettingsService;
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IEmailService _emailService;
 
-    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher, IGlobalSettingsService globalSettingsService)
+    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher, IGlobalSettingsService globalSettingsService, IEmailService emailService)
     {
         _accountRepository = accountRepository;
         _accountValidator = accountValidator;
@@ -21,6 +23,7 @@ public class AccountService : IAccountService
         _optionsValidator = optionsValidator;
         _passwordHasher = passwordHasher;
         _globalSettingsService = globalSettingsService;
+        _emailService = emailService;
     }
 
     public async Task<bool> CreateAsync(Account account, CancellationToken token = default)
@@ -39,7 +42,27 @@ public class AccountService : IAccountService
                                            ActivationCode = _passwordHasher.CreateActivationToken()
                                        };
 
-        return await _accountRepository.CreateAsync(account, activation, token);
+        var success = await _accountRepository.CreateAsync(account, activation, token);
+
+        if (success)
+        {
+            var data = new EmailData()
+                       {
+                           Id = Guid.NewGuid(),
+                           ShouldSend = true,
+                           SendAfterUtc = _dateTimeProvider.GetUtcNow(),
+                           SenderAccountId = Guid.NewGuid(),
+                           ReceiverAccountId = account.Id,
+                           SenderEmail = "accounts@dndwithin.com",
+                           RecipientEmail = account.Email,
+                           Body = $"Activation: {activation.ActivationCode}",
+                           ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created"
+                       };
+
+            _emailService.SendEmail(data, token); // fire and forget, no waiting.
+        }
+
+        return success;
     }
 
     public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token = default)
