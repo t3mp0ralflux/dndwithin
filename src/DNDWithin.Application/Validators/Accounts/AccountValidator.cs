@@ -49,7 +49,7 @@ public class AccountValidator : AbstractValidator<Account>
 
         if (emailExists is not null)
         {
-            context.AddFailure("Email already exists. Please login instead");
+            context.AddFailure("Email already in use. Please login instead");
             return false;
         }
 
