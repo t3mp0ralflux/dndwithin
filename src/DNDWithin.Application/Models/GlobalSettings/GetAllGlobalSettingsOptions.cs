@@ -1,4 +1,4 @@
-﻿namespace DNDWithin.Application.Models.Accounts;
+﻿namespace DNDWithin.Application.Models.GlobalSettings;
 
 public class GetAllGlobalSettingsOptions
 {

@@ -1,4 +1,5 @@
 ﻿using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.GlobalSettings;
 using FluentValidation;
 
 namespace DNDWithin.Application.Validators.GlobalSettings;

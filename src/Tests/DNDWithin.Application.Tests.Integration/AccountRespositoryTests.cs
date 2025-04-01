@@ -1,5 +1,6 @@
 ﻿using DNDWithin.Api.Mapping;
 using DNDWithin.Application.Database;
+using DNDWithin.Application.Models;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Repositories.Implementation;
 using DNDWithin.Application.Services.Implementation;
@@ -158,6 +159,56 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeEquivalentTo(expectedResult, options => options
                                                                   .Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1)))
                                                                   .WhenTypeIs<DateTime>());
+    }
+
+    [Theory]
+    [InlineData(SortOrder.unordered)]
+    [InlineData(SortOrder.ascending)]
+    [InlineData(SortOrder.descending)]
+    public async Task GetAllAsync_ShouldReturnSortedList_WhenItemsAreFound(SortOrder sortOrder)
+    {
+         // Arrange
+         var accounts = Enumerable.Range(5, 10).Select(x => Fakes.GenerateAccount()).ToList();
+         foreach (Account account in accounts)
+         {
+             await _sut.CreateAsync(account);
+         }
+
+         var options = new GetAllAccountsOptions()
+                       {
+                           SortField = "username",
+                           SortOrder = sortOrder,
+                           Page = 1,
+                           PageSize = 25,
+                       };
+
+         IEnumerable<Account> expectedAccountOrder = sortOrder switch
+         {
+             SortOrder.ascending => accounts.OrderBy(x => x.Username),
+             SortOrder.descending => accounts.OrderByDescending(x => x.Username),
+             _ => accounts
+         };
+
+         // Act
+         var dbResult = await _sut.GetAllAsync(options);
+         var results = dbResult.ToList();
+
+         results.Should().NotBeEmpty();
+
+         switch (sortOrder)
+         {
+             // Assert
+             case SortOrder.ascending:
+                 results.Should().BeInAscendingOrder(x => x.Username, StringComparer.CurrentCulture);
+                 break;
+             case SortOrder.descending:
+                 results.Should().BeInDescendingOrder(x => x.Username, StringComparer.CurrentCulture);
+                 break;
+             case SortOrder.unordered:
+             default:
+                 break;
+         }
+
     }
 
     [SkipIfEnvironmentMissingFact]
@@ -349,5 +400,83 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         Account? deletedRecord = await _sut.GetByIdAsync(account.Id);
         deletedRecord.Should().NotBeNull();
         deletedRecord.DeletedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task ExistsByIdAsync_ShouldReturnNull_WhenIdIsNotFound()
+    {
+        // Arrange
+
+        // Act
+        var result = await _sut.ExistsByIdAsync(Guid.NewGuid());
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task ExistsByIdAsync_ShouldReturnAccount_WhenIdIsFound()
+    {
+        // Arrange
+        var account = Fakes.GenerateAccount();
+        await _sut.CreateAsync(account);
+        
+        // Act
+        var result = await _sut.ExistsByIdAsync(account.Id);
+
+        // Assert
+        result.Should().NotBeNull();
+    }
+    
+    [SkipIfEnvironmentMissingFact]
+    public async Task ExistsByUsernameAsync_ShouldReturnNull_WhenUsernameIsNotFound()
+    {
+        // Arrange
+
+        // Act
+        var result = await _sut.ExistsByUsernameAsync("Test");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task ExistsByUsernameAsync_ShouldReturnAccount_WhenUsernameIsFound()
+    {
+        // Arrange
+        var account = Fakes.GenerateAccount();
+        await _sut.CreateAsync(account);
+        
+        // Act
+        var result = await _sut.ExistsByUsernameAsync(account.Username);
+
+        // Assert
+        result.Should().NotBeNull();
+    }
+    
+    [SkipIfEnvironmentMissingFact]
+    public async Task ExistsByEmailAsync_ShouldReturnNull_WhenEmailIsNotFound()
+    {
+        // Arrange
+
+        // Act
+        var result = await _sut.ExistsByEmailAsync("test@test.com");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task ExistsByEmailAsync_ShouldReturnAccount_WhenEmailIsFound()
+    {
+        // Arrange
+        var account = Fakes.GenerateAccount();
+        await _sut.CreateAsync(account);
+        
+        // Act
+        var result = await _sut.ExistsByEmailAsync(account.Email!);
+
+        // Assert
+        result.Should().NotBeNull();
     }
 }

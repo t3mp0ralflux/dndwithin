@@ -50,4 +50,35 @@ public class AccountServiceTests
         createdAccount.CreatedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
         createdAccount.UpdatedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
     }
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsNull_WhenAccountIsNotFound()
+    {
+        // Arrange
+        var account = Fakes.GenerateAccount();
+        _accountRepository.ExistsByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns((Account?)null);
+
+        // Act
+        var result = await _sut.UpdateAsync(account);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsAccount_WhenUpdateIsSuccessful()
+    {
+        // Arrange
+        var account = Fakes.GenerateAccount();
+
+        _accountRepository.ExistsByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        _accountRepository.UpdateAsync(account, Arg.Any<CancellationToken>()).Returns(true);
+        
+        // Act
+        var result = await _sut.UpdateAsync(account, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(account.Id);
+    }
 }
