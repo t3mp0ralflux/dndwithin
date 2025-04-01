@@ -87,4 +87,20 @@ public class AccountController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPost(ApiEndpoints.Accounts.Activate)]
+    public async Task<IActionResult> Activate([FromRoute] AccountActivationRequest request)
+    {
+        AccountActivation activationRequest = request.ToAccountActivation();
+        (bool isActive, string reason) activationResult = await _accountService.ActivateAsync(activationRequest);
+
+        if (!activationResult.isActive)
+        {
+            return Unauthorized(activationResult.reason);
+        }
+
+        AccountActivationResponse response = activationRequest.ToResponse();
+
+        return Ok(response);
+    }
 }

@@ -5,7 +5,6 @@ using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Requests.GlobalSetting;
 using DNDWithin.Contracts.Responses.Account;
 using DNDWithin.Contracts.Responses.GlobalSetting;
-using Microsoft.AspNetCore.WebUtilities;
 using ctr = DNDWithin.Contracts.Models;
 
 namespace DNDWithin.Api.Mapping;
@@ -85,13 +84,30 @@ public static class ContractMapping
                };
     }
 
+    public static AccountActivation ToAccountActivation(this AccountActivationRequest request)
+    {
+        return new AccountActivation
+               {
+                   Username = request.Username,
+                   ActivationCode = request.ActivationCode
+               };
+    }
+
+    public static AccountActivationResponse ToResponse(this AccountActivation activation)
+    {
+        return new AccountActivationResponse
+               {
+                   Username = activation.Username
+               };
+    }
+
     #endregion
 
     #region GlobalSettings
 
     public static GlobalSetting ToGlobalSetting(this GlobalSettingCreateRequest request)
     {
-        return new GlobalSetting()
+        return new GlobalSetting
                {
                    Id = Guid.NewGuid(),
                    Name = request.Name,

@@ -9,16 +9,18 @@ public class AccountService : IAccountService
     private readonly IAccountRepository _accountRepository;
     private readonly IValidator<Account> _accountValidator;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IGlobalSettingsService _globalSettingsService;
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator;
     private readonly IPasswordHasher _passwordHasher;
 
-    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher)
+    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher, IGlobalSettingsService globalSettingsService)
     {
         _accountRepository = accountRepository;
         _accountValidator = accountValidator;
         _dateTimeProvider = dateTimeProvider;
         _optionsValidator = optionsValidator;
         _passwordHasher = passwordHasher;
+        _globalSettingsService = globalSettingsService;
     }
 
     public async Task<bool> CreateAsync(Account account, CancellationToken token = default)
@@ -28,7 +30,16 @@ public class AccountService : IAccountService
         account.UpdatedUtc = _dateTimeProvider.GetUtcNow();
         account.Password = _passwordHasher.Hash(account.Password!);
 
-        return await _accountRepository.CreateAsync(account, token);
+        int expirationHours = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACCOUNT_ACTIVATION_EXPIRATION_HOURS, 8, token);
+
+        AccountActivation activation = new()
+                                       {
+                                           Username = account.Username,
+                                           Expiration = _dateTimeProvider.GetUtcNow().AddHours(expirationHours),
+                                           ActivationCode = _passwordHasher.CreateActivationToken()
+                                       };
+
+        return await _accountRepository.CreateAsync(account, activation, token);
     }
 
     public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token = default)
@@ -73,5 +84,30 @@ public class AccountService : IAccountService
     public async Task<bool> DeleteAsync(Guid id, CancellationToken token = default)
     {
         return await _accountRepository.DeleteAsync(id, token);
+    }
+
+    public async Task<(bool isActive, string reason)> ActivateAsync(AccountActivation activation, CancellationToken token = default)
+    {
+        Account? existingAccount = await _accountRepository.GetByUsernameAsync(activation.Username, token);
+
+        if (existingAccount is null)
+        {
+            return (false, "No account found");
+        }
+
+        if (existingAccount.Activation.Code != activation.ActivationCode || existingAccount.Activation.Expiration < _dateTimeProvider.GetUtcNow())
+        {
+            return (false, "Activation Code has expired");
+        }
+
+        existingAccount.AccountStatus = AccountStatus.active;
+        existingAccount.ActivatedUtc = _dateTimeProvider.GetUtcNow();
+        existingAccount.UpdatedUtc = _dateTimeProvider.GetUtcNow();
+
+        bool activated = await _accountRepository.ActivateAsync(existingAccount, token);
+
+        return !activated
+            ? (false, "Activation failed, please try again")
+            : (activated, "Activation successful");
     }
 }

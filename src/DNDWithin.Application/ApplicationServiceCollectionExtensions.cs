@@ -1,4 +1,5 @@
 ﻿using DNDWithin.Application.Database;
+using DNDWithin.Application.HostedServices;
 using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Repositories.Implementation;
 using DNDWithin.Application.Services;
@@ -46,6 +47,8 @@ public static class ApplicationServiceCollectionExtensions
     {
         services.AddSingleton<IDbConnectionFactory>(_ => new NpgsqlConnectionFactory(connectionString));
         services.AddSingleton<DbInitializer>();
+
+        services.AddHostedService<EmailVerificationService>();
         return services;
     }
 }

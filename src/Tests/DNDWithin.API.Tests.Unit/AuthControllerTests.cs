@@ -98,10 +98,32 @@ public class AuthControllerTests
         _passwordHasher.Verify(request.Password, account.Password).Returns(false);
 
         // Act
-        UnauthorizedResult result = (UnauthorizedResult)await _sut.Login(request, CancellationToken.None);
+        UnauthorizedObjectResult result = (UnauthorizedObjectResult)await _sut.Login(request, CancellationToken.None);
 
         // Assert
         result.StatusCode.Should().Be(401);
+        result.Value.Should().Be("Username or password was incorrect");
+    }
+
+    [Fact]
+    public async Task Login_ShouldReturnUnauthorized_WhenAccountIsNotActive()
+    {
+        // Arrange
+        Account account = Fakes.GenerateAccount(AccountStatus.created);
+        LoginRequest request = new()
+                               {
+                                   Email = account.Email,
+                                   Password = account.Password
+                               };
+
+        _accountService.GetByEmailAsync(request.Email, CancellationToken.None).Returns(account);
+
+        // Act
+        UnauthorizedObjectResult result = (UnauthorizedObjectResult)await _sut.Login(request, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(401);
+        result.Value.Should().Be("You must activate your account before you can login");
     }
 
     [Fact]

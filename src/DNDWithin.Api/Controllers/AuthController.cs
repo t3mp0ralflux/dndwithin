@@ -38,11 +38,16 @@ public class AuthController : ControllerBase
             return NotFound();
         }
 
+        if (account.AccountStatus != AccountStatus.active)
+        {
+            return Unauthorized("You must activate your account before you can login");
+        }
+
         bool verified = _passwordHasher.Verify(request.Password, account.Password);
 
         if (!verified)
         {
-            return Unauthorized();
+            return Unauthorized("Username or password was incorrect");
         }
 
         string jwtToken = _jwtTokenGeneratorService.GenerateToken(account, request, token);

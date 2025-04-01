@@ -15,5 +15,13 @@ public class Account
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
     public DateTime LastLoginUtc { get; set; }
+    public DateTime? ActivatedUtc { get; set; }
     public DateTime? DeletedUtc { get; set; }
+    public Activation Activation { get; set; } = new();
+}
+
+public class Activation
+{
+    public DateTime Expiration { get; set; }
+    public string Code { get; set; }
 }

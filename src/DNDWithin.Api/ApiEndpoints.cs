@@ -6,6 +6,7 @@ public static class ApiEndpoints
 
     public static class Accounts
     {
+        public const string Activate = $"{Base}/activate/{{username}}/{{activationcode}}";
         private const string Base = $"{ApiBase}/accounts";
         public const string Create = Base;
         public const string Delete = $"{Base}/{{id:guid}}";
