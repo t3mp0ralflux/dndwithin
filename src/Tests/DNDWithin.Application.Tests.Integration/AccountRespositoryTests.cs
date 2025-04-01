@@ -109,7 +109,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                         {
                                             AccountStatus = accountStatus,
                                             AccountRole = accountRole,
-                                            UserName = userName
+                                            UserName = userName,
+                                            Page = 1,
+                                            PageSize = 10
                                         };
         await _sut.CreateAsync(account);
 
