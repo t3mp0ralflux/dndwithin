@@ -1,4 +1,5 @@
-﻿using DNDWithin.Application.Models.Accounts;
+﻿using System.Runtime.InteropServices.JavaScript;
+using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Services;
 using DNDWithin.Application.Services.Implementation;
@@ -17,10 +18,12 @@ public class AccountServiceTests
     private readonly IDateTimeProvider _dateTimeProvider = Substitute.For<IDateTimeProvider>();
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator = Substitute.For<IValidator<GetAllAccountsOptions>>();
     private readonly IPasswordHasher _passwordHasher = new PasswordHasher();
+    private readonly IGlobalSettingsService _globalSettingsService = Substitute.For<IGlobalSettingsService>();
+    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
 
     public AccountServiceTests()
     {
-        _sut = new AccountService(_accountRepository, _accountValidator, _dateTimeProvider, _optionsValidator, _passwordHasher);
+        _sut = new AccountService(_accountRepository, _accountValidator, _dateTimeProvider, _optionsValidator, _passwordHasher, _globalSettingsService, _emailService);
     }
 
     public AccountService _sut { get; set; }
@@ -32,7 +35,7 @@ public class AccountServiceTests
         DateTime now = DateTime.UtcNow;
         Account? account = Fakes.GenerateAccount();
 
-        _accountRepository.CreateAsync(Arg.Any<Account>(), CancellationToken.None).Returns(true);
+        _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
         _dateTimeProvider.GetUtcNow().Returns(now);
 
         // Act

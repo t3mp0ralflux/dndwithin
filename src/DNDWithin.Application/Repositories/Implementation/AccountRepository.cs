@@ -156,6 +156,7 @@ public class AccountRepository : IAccountRepository
         return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
                                                                                           select {AccountFields}
                                                                                           from account acct
+                                                                                          left join accountactivation aa on acct.id = aa.account_id
                                                                                           where username = @userName
                                                                                           """, new { userName }, cancellationToken: token));
     }

@@ -59,7 +59,7 @@ public class AccountService : IAccountService
                            ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created"
                        };
 
-            _emailService.SendEmail(data, token); // fire and forget, no waiting.
+            _emailService.QueueEmail(data, token); // fire and forget, no waiting.
         }
 
         return success;

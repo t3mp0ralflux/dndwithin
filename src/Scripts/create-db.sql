@@ -7,7 +7,7 @@ create table if not exists account (
     email varchar(50) not null,
     created_utc timestamp not null,
     updated_utc timestamp not null,
-    activated_utc timestamp not null,
+    activated_utc timestamp null,
     last_login_utc timestamp not null,
     deleted_utc timestamp null,
     account_status int not null,

@@ -49,7 +49,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<DbInitializer>();
         services.AddSingleton<IEmailService, EmailService>();
 
-        services.AddHostedService<EmailVerificationService>();
+        //services.AddHostedService<EmailVerificationService>();
         return services;
     }
 }

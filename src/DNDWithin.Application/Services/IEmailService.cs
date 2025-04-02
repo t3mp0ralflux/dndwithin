@@ -4,5 +4,5 @@ namespace DNDWithin.Application.Services;
 
 public interface IEmailService
 {
-    Task SendEmail(EmailData emailData, CancellationToken token = default);
+    Task QueueEmail(EmailData emailData, CancellationToken token = default);
 }
