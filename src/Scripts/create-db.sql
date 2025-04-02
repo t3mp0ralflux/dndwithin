@@ -28,6 +28,7 @@ create table if not exists email(
     account_id_sender UUID references account(id),
     account_id_receiver UUID references account(id),
     should_send boolean not null,
+    send_attempts int not null,
     sent_utc timestamp null,
     send_after_utc timestamp not null,
     sender_email varchar(50) not null,

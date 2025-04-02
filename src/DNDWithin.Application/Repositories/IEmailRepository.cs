@@ -1,10 +1,10 @@
 ﻿using DNDWithin.Application.Models.System;
 
-namespace DNDWithin.Application.Services;
+namespace DNDWithin.Application.Repositories;
 
-public interface IEmailService
+public interface IEmailRepository
 {
-    Task QueueEmail(EmailData emailData, CancellationToken token = default);
+    Task<bool> QueueEmail(EmailData emailData, CancellationToken token = default);
     Task<List<EmailData>> GetForProcessing(int batchSize, CancellationToken token = default);
     Task<bool> Update(EmailData emailData, CancellationToken token = default);
 }

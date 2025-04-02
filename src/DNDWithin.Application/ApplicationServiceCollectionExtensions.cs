@@ -17,6 +17,7 @@ public static class ApplicationServiceCollectionExtensions
 
         services.AddSingleton<IAccountRepository, AccountRepository>();
         services.AddSingleton<IGlobalSettingsRepository, GlobalSettingsRepository>();
+        services.AddSingleton<IEmailRepository, EmailRepository>();
 
         #endregion
 
@@ -24,6 +25,7 @@ public static class ApplicationServiceCollectionExtensions
 
         services.AddSingleton<IAccountService, AccountService>();
         services.AddSingleton<IGlobalSettingsService, GlobalSettingsService>();
+        services.AddSingleton<IEmailService, EmailService>();
 
         #endregion
 
@@ -49,7 +51,8 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<DbInitializer>();
         services.AddSingleton<IEmailService, EmailService>();
 
-        //services.AddHostedService<EmailVerificationService>();
+        services.AddHostedService<EmailVerificationService>();
+        
         return services;
     }
 }

@@ -26,11 +26,11 @@ public class AuthController : ControllerBase
         Account? account;
         if (request.Email.Contains('@'))
         {
-            account = await _accountService.GetByEmailAsync(request.Email, token);
+            account = await _accountService.GetByEmailAsync(request.Email.ToLowerInvariant(), token);
         }
         else
         {
-            account = await _accountService.GetByUsernameAsync(request.Email, token);
+            account = await _accountService.GetByUsernameAsync(request.Email.ToLowerInvariant(), token);
         }
 
         if (account is null)

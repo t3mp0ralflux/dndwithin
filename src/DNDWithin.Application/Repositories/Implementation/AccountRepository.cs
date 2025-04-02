@@ -89,11 +89,16 @@ public class AccountRepository : IAccountRepository
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
-        Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
-                                                                                                      select {AccountFields} 
-                                                                                                      from account acct
-                                                                                                      where id = @id
-                                                                                                     """, new { id }, cancellationToken: token));
+        Account? result = (await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
+                                                                                                            select {AccountFields}, actv.expiration, actv.code
+                                                                                                            from account acct
+                                                                                                            left join accountactivation actv on acct.id = actv.account_id
+                                                                                                            where acct.id = @id 
+                                                                                                            """, new { id }, cancellationToken: token), (account, activation) =>
+        {
+            account.Activation = activation;
+            return account;
+        }, "expiration")).FirstOrDefault();
 
         return result;
     }
@@ -109,9 +114,10 @@ public class AccountRepository : IAccountRepository
             orderClause = $"order by {options.SortField} {(options.SortOrder == SortOrder.ascending ? "asc" : "desc")}";
         }
 
-        IEnumerable<Account> results = await connection.QueryAsync<Account>(new CommandDefinition($"""
-                                                                                                   select {AccountFields}
+        IEnumerable<Account> results = await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
+                                                                                                   select {AccountFields}, actv.expiration, actv.code
                                                                                                    from account acct
+                                                                                                   left join accountactivation actv on acct.id = actv.account_id
                                                                                                    where (@username is null or username like ('%' || @username || '%'))
                                                                                                    and (@accountrole is null or account_role = @accountrole)
                                                                                                    and (@accountstatus is null or account_status = @accountstatus )
@@ -125,7 +131,11 @@ public class AccountRepository : IAccountRepository
                                                                                                             accountstatus = options.AccountStatus,
                                                                                                             pageSize = options.PageSize,
                                                                                                             pageOffset = (options.Page - 1) * options.PageSize
-                                                                                                        }, cancellationToken: token));
+                                                                                                        }, cancellationToken: token), (account, activation) =>
+        {
+            account.Activation = activation;
+            return account;
+        }, "expiration");
 
         return results;
     }
@@ -157,7 +167,7 @@ public class AccountRepository : IAccountRepository
                                                                                           select {AccountFields}
                                                                                           from account acct
                                                                                           left join accountactivation aa on acct.id = aa.account_id
-                                                                                          where username = @userName
+                                                                                          where lower(username) = @userName
                                                                                           """, new { userName }, cancellationToken: token));
     }
 
@@ -201,7 +211,7 @@ public class AccountRepository : IAccountRepository
                                                                 where account_id = @id
                                                                 """, new { id }));
         }
-        
+
         transaction.Commit();
 
         return result > 0;

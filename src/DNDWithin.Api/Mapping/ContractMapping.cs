@@ -22,7 +22,7 @@ public static class ContractMapping
                    LastName = request.LastName,
                    Username = request.UserName,
                    Password = request.Password,
-                   Email = request.Email
+                   Email = request.Email.ToLowerInvariant()
                };
     }
 
@@ -33,6 +33,9 @@ public static class ContractMapping
                    Id = id,
                    FirstName = request.FirstName,
                    LastName = request.LastName,
+                   Username = string.Empty, // not used, but required
+                   Email = string.Empty,    // not used, but required
+                   Password = string.Empty, // not used, but required
                    AccountStatus = (AccountStatus)request.AccountStatus,
                    AccountRole = (AccountRole)request.AccountRole
                };

@@ -56,6 +56,12 @@ builder.Services.AddControllers();
 builder.Services.AddApplication();
 builder.Services.AddDatabase(config["ConnectionStrings:Database"]!);
 
+builder.Services.Configure<HostOptions>(x =>
+{
+    x.ServicesStartConcurrently = true;
+    x.ServicesStopConcurrently = false;
+});
+
 WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
