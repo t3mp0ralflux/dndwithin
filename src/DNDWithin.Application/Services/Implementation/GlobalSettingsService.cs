@@ -55,14 +55,16 @@ public class GlobalSettingsService : IGlobalSettingsService
         
         try
         {
-            Type? type = Nullable.GetUnderlyingType(typeof(T));
-            if (type is null)
-            {
-                return defaultValue;
-            }
-            
-            return (T)Convert.ChangeType(setting.Name, type);
-            
+            // Type? type = Nullable.GetUnderlyingType(typeof(T));
+            // if (type is null)
+            // {
+            //     return defaultValue;
+            // }
+            //
+            // return (T)Convert.ChangeType(setting.Name, type);
+
+            return (T)Convert.ChangeType(setting.Value, typeof(T));
+
         }
         catch(Exception ex)
         {

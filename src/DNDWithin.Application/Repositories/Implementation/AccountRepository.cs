@@ -95,10 +95,10 @@ public class AccountRepository : IAccountRepository
                                                                                                             left join accountactivation actv on acct.id = actv.account_id
                                                                                                             where acct.id = @id 
                                                                                                             """, new { id }, cancellationToken: token), (account, activation) =>
-        {
-            account.Activation = activation;
-            return account;
-        }, "expiration")).FirstOrDefault();
+                                                                                                                                                        {
+                                                                                                                                                            account.Activation = activation;
+                                                                                                                                                            return account;
+                                                                                                                                                        }, "expiration")).FirstOrDefault();
 
         return result;
     }
@@ -115,27 +115,27 @@ public class AccountRepository : IAccountRepository
         }
 
         IEnumerable<Account> results = await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
-                                                                                                   select {AccountFields}, actv.expiration, actv.code
-                                                                                                   from account acct
-                                                                                                   left join accountactivation actv on acct.id = actv.account_id
-                                                                                                   where (@username is null or username like ('%' || @username || '%'))
-                                                                                                   and (@accountrole is null or account_role = @accountrole)
-                                                                                                   and (@accountstatus is null or account_status = @accountstatus )
-                                                                                                   {orderClause}
-                                                                                                   limit @pageSize
-                                                                                                   offset @pageOffset
-                                                                                                   """, new
-                                                                                                        {
-                                                                                                            username = options.UserName,
-                                                                                                            accountrole = options.AccountRole,
-                                                                                                            accountstatus = options.AccountStatus,
-                                                                                                            pageSize = options.PageSize,
-                                                                                                            pageOffset = (options.Page - 1) * options.PageSize
-                                                                                                        }, cancellationToken: token), (account, activation) =>
-        {
-            account.Activation = activation;
-            return account;
-        }, "expiration");
+                                                                                                                        select {AccountFields}, actv.expiration, actv.code
+                                                                                                                        from account acct
+                                                                                                                        left join accountactivation actv on acct.id = actv.account_id
+                                                                                                                        where (@username is null or username like ('%' || @username || '%'))
+                                                                                                                        and (@accountrole is null or account_role = @accountrole)
+                                                                                                                        and (@accountstatus is null or account_status = @accountstatus )
+                                                                                                                        {orderClause}
+                                                                                                                        limit @pageSize
+                                                                                                                        offset @pageOffset
+                                                                                                                        """, new
+                                                                                                                             {
+                                                                                                                                 username = options.UserName,
+                                                                                                                                 accountrole = options.AccountRole,
+                                                                                                                                 accountstatus = options.AccountStatus,
+                                                                                                                                 pageSize = options.PageSize,
+                                                                                                                                 pageOffset = (options.Page - 1) * options.PageSize
+                                                                                                                             }, cancellationToken: token), (account, activation) =>
+                                                                                                                                                           {
+                                                                                                                                                               account.Activation = activation;
+                                                                                                                                                               return account;
+                                                                                                                                                           }, "expiration");
 
         return results;
     }
@@ -153,22 +153,31 @@ public class AccountRepository : IAccountRepository
     public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
-        return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
-                                                                                          select {AccountFields}
-                                                                                          from account acct
-                                                                                          where email = @email
-                                                                                          """, new { email }, cancellationToken: token));
+        return (await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
+                                                                                                 select {AccountFields}, actv.expiration, actv.code
+                                                                                                 from account acct
+                                                                                                 left join accountactivation actv on acct.id = actv.account_id
+                                                                                                 where lower(email) = @email
+                                                                                                 """, new { email }, cancellationToken: token), (account, activation) =>
+                                                                                                                                                {
+                                                                                                                                                    account.Activation = activation;
+                                                                                                                                                    return account;
+                                                                                                                                                }, "expiration")).FirstOrDefault();
     }
 
     public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
-        return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
-                                                                                          select {AccountFields}
-                                                                                          from account acct
-                                                                                          left join accountactivation aa on acct.id = aa.account_id
-                                                                                          where lower(username) = @userName
-                                                                                          """, new { userName }, cancellationToken: token));
+        return (await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
+                                                                                                 select {AccountFields}, actv.expiration, actv.code
+                                                                                                 from account acct
+                                                                                                 left join accountactivation actv on acct.id = actv.account_id
+                                                                                                 where lower(username) = @userName
+                                                                                                 """, new { userName }, cancellationToken: token), (account, activation) =>
+                                                                                                                                                   {
+                                                                                                                                                       account.Activation = activation;
+                                                                                                                                                       return account;
+                                                                                                                                                   }, "expiration")).FirstOrDefault();
     }
 
     public async Task<bool> UpdateAsync(Account account, CancellationToken token = default)
@@ -239,6 +248,21 @@ public class AccountRepository : IAccountRepository
 
         transaction.Commit();
 
+        return result > 0;
+    }
+
+    public async Task<bool> UpdateActivationAsync(Guid accountId, AccountActivation accountActivation, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        using IDbTransaction transaction = connection.BeginTransaction();
+
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
+                                                                         update accountactivation
+                                                                         set code = @ActivationCode, expiration = @Expiration
+                                                                         where account_id = @accountId
+                                                                         """, new { accountId, accountActivation.ActivationCode, accountActivation.Expiration }));
+        
+        transaction.Commit();
         return result > 0;
     }
 }

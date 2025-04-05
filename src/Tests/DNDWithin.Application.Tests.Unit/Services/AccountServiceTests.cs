@@ -1,10 +1,12 @@
 ﻿using System.Runtime.InteropServices.JavaScript;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.System;
 using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Services;
 using DNDWithin.Application.Services.Implementation;
 using FluentAssertions;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.Core;
 using Testing.Common;
@@ -20,10 +22,11 @@ public class AccountServiceTests
     private readonly IPasswordHasher _passwordHasher = new PasswordHasher();
     private readonly IGlobalSettingsService _globalSettingsService = Substitute.For<IGlobalSettingsService>();
     private readonly IEmailService _emailService = Substitute.For<IEmailService>();
+    private readonly ILogger<AccountService> _logger = Substitute.For<ILogger<AccountService>>();
 
     public AccountServiceTests()
     {
-        _sut = new AccountService(_accountRepository, _accountValidator, _dateTimeProvider, _optionsValidator, _passwordHasher, _globalSettingsService, _emailService);
+        _sut = new AccountService(_accountRepository, _accountValidator, _dateTimeProvider, _optionsValidator, _passwordHasher, _globalSettingsService, _emailService, _logger);
     }
 
     public AccountService _sut { get; set; }
@@ -33,10 +36,12 @@ public class AccountServiceTests
     {
         // Arrange
         DateTime now = DateTime.UtcNow;
-        Account? account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
+        Account serviceAccount = Fakes.GenerateAccount();
 
         _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
         _dateTimeProvider.GetUtcNow().Returns(now);
+        _accountRepository.GetByUsernameAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(serviceAccount);
 
         // Act
         bool result = await _sut.CreateAsync(account.Clone());

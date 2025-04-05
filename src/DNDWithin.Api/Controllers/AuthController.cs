@@ -26,11 +26,11 @@ public class AuthController : ControllerBase
         Account? account;
         if (request.Email.Contains('@'))
         {
-            account = await _accountService.GetByEmailAsync(request.Email.ToLowerInvariant(), token);
+            account = await _accountService.GetByEmailAsync(request.Email, token);
         }
         else
         {
-            account = await _accountService.GetByUsernameAsync(request.Email.ToLowerInvariant(), token);
+            account = await _accountService.GetByUsernameAsync(request.Email, token);
         }
 
         if (account is null)
@@ -47,7 +47,7 @@ public class AuthController : ControllerBase
 
         if (!verified)
         {
-            return Unauthorized("Username or password was incorrect");
+            return Unauthorized("Username or password is incorrect");
         }
 
         string jwtToken = _jwtTokenGeneratorService.GenerateToken(account, request, token);

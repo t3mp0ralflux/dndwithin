@@ -76,10 +76,11 @@ public class AuthControllerTests
         _passwordHasher.Verify(request.Password, account.Password).Returns(false);
 
         // Act
-        UnauthorizedResult result = (UnauthorizedResult)await _sut.Login(request, CancellationToken.None);
+        UnauthorizedObjectResult result = (UnauthorizedObjectResult)await _sut.Login(request, CancellationToken.None);
 
         // Assert
         result.StatusCode.Should().Be(401);
+        result.Value.Should().Be("Username or password is incorrect");
     }
 
     [Fact]
@@ -102,7 +103,7 @@ public class AuthControllerTests
 
         // Assert
         result.StatusCode.Should().Be(401);
-        result.Value.Should().Be("Username or password was incorrect");
+        result.Value.Should().Be("Username or password is incorrect");
     }
 
     [Fact]

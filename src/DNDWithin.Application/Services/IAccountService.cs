@@ -20,4 +20,5 @@ public interface IAccountService
     Task<Account?> UpdateAsync(Account account, CancellationToken token = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken token = default);
     Task<(bool isActive, string reason)> ActivateAsync(AccountActivation activation, CancellationToken token = default);
+    Task<bool> ResendActivation(string username, string activationCode, CancellationToken token = default);
 }

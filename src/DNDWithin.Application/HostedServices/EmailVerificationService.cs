@@ -1,6 +1,9 @@
-﻿using DNDWithin.Application.Models.System;
+﻿using System.Net;
+using System.Net.Mail;
+using DNDWithin.Application.Models.System;
 using DNDWithin.Application.Services;
 using DNDWithin.Application.Services.Implementation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -8,19 +11,21 @@ namespace DNDWithin.Application.HostedServices;
 
 public class EmailVerificationService : IHostedService
 {
-    private readonly ILogger<EmailVerificationService> _logger;
-    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IEmailService _emailService;
     private readonly IGlobalSettingsService _globalSettingsService;
-    
+    private readonly ILogger<EmailVerificationService> _logger;
+
     private PeriodicTimer _timer;
 
-    public EmailVerificationService(ILogger<EmailVerificationService> logger, IEmailService emailService, IDateTimeProvider dateTimeProvider, IGlobalSettingsService globalSettingsService)
+    public EmailVerificationService(ILogger<EmailVerificationService> logger, IEmailService emailService, IDateTimeProvider dateTimeProvider, IGlobalSettingsService globalSettingsService, IConfiguration configuration)
     {
         _logger = logger;
         _emailService = emailService;
         _dateTimeProvider = dateTimeProvider;
         _globalSettingsService = globalSettingsService;
+        _configuration = configuration;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -51,7 +56,7 @@ public class EmailVerificationService : IHostedService
             return;
         }
 
-        var maxEmailsToSend = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.EMAIL_SEND_BATCH_LIMIT, 100, token);
+        int maxEmailsToSend = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.EMAIL_SEND_BATCH_LIMIT, 100, token);
 
         List<EmailData> emailsToProcess = await _emailService.GetForProcessing(maxEmailsToSend, token);
 
@@ -61,7 +66,7 @@ public class EmailVerificationService : IHostedService
             return;
         }
 
-        var maxAttempts = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.EMAIL_SEND_ATTEMPTS_MAX, 5, token);
+        int maxAttempts = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.EMAIL_SEND_ATTEMPTS_MAX, 5, token);
 
         foreach (EmailData emailData in emailsToProcess)
         {
@@ -72,31 +77,62 @@ public class EmailVerificationService : IHostedService
                 emailData.ShouldSend = false;
                 emailData.ResponseLog += $"{_dateTimeProvider}: Max email attempts reached";
 
-                _emailService.Update(emailData, token);
+                await _emailService.Update(emailData, token);
                 continue;
             }
 
             emailData.ShouldSend = false; // hit early to avoid spamming on DB write errors.
-            emailData.ResponseLog += $"{_dateTimeProvider}: Email Sent;";
 
-            _emailService.Update(emailData, token);
+            await _emailService.Update(emailData, token);
 
-            var success = await SendEmailAsync(emailData, token);
+            (bool success, string message) = await SendEmailAsync(emailData, token);
 
             if (success)
             {
+                emailData.ResponseLog += $"{_dateTimeProvider}: Email Sent;";
+                emailData.ShouldSend = false;
+                emailData.SentUtc = _dateTimeProvider.GetUtcNow();
+
+                await _emailService.Update(emailData, token);
                 continue;
             }
 
             emailData.ShouldSend = true;
-            emailData.ResponseLog += $"{_dateTimeProvider.GetUtcNow()}: Email failed to send. Attempt {emailData.SendAttempts} out of {maxAttempts};";
-            _emailService.Update(emailData, token);
+            emailData.ResponseLog += $"{_dateTimeProvider.GetUtcNow()}: Email failed to send. Attempt {emailData.SendAttempts} out of {maxAttempts}. Error {message};";
+            await _emailService.Update(emailData, token);
         }
     }
 
-    private async Task<bool> SendEmailAsync(EmailData emailData, CancellationToken token)
+    private async Task<(bool success, string message)> SendEmailAsync(EmailData emailData, CancellationToken token)
     {
-        return true;
+        MailAddress from = new(emailData.SenderEmail, "DNDWithin Account Services");
+        MailAddress to = new(emailData.RecipientEmail);
+
+        MailMessage message = new(from, to);
+        message.Subject = "Account Activation";
+        message.IsBodyHtml = true;
+        message.Body = emailData.Body;
+
+        SmtpClient client = new("smtp.gmail.com", 587);
+        client.EnableSsl = true;
+        client.Credentials = new NetworkCredential(_configuration["Google:EmailAddress"], _configuration["Google:EmailCode"]);
+
+        try
+        {
+            await client.SendMailAsync(message, token);
+        }
+        catch (SmtpException smtpEx)
+        {
+            _logger.LogWarning(smtpEx.Message, smtpEx);
+            return (false, smtpEx.Message);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e.Message, e);
+            return (false, e.Message);
+        }
+
+        return (true, "Email sent successfully");
     }
 
     private class State

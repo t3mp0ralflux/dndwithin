@@ -18,7 +18,7 @@ public class AccountValidator : AbstractValidator<Account>
         RuleFor(x => x.Password).NotEmpty();
     }
 
-    private async Task<bool> ValidateUserName(string? userName, ValidationContext<Account> context, CancellationToken token = default)
+    private async Task<bool> ValidateUserName(string? userName, ValidationContext<Account> context, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(userName))
         {

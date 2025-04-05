@@ -79,10 +79,13 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                              Expiration = DateTime.UtcNow
                          };
         
+        account.Activation.Code = "Test";
+        account.Activation.Expiration = DateTime.UtcNow;
+        
         await _sut.CreateAsync(account, activation);
 
         // Act
-        Account? result = await _sut.GetByUsernameAsync(account.Username);
+        Account? result = await _sut.GetByUsernameAsync(account.Username.ToLowerInvariant());
 
         // Assert
         result.Should().NotBeNull();
@@ -121,6 +124,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                              ActivationCode = "Test",
                              Expiration = DateTime.UtcNow
                          };
+
+        account.Activation.Code = "Test";
+        account.Activation.Expiration = DateTime.UtcNow;
         
         await _sut.CreateAsync(account, activation);
 
@@ -174,7 +180,12 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         Random random = new();
 
+        var now = DateTime.UtcNow;
+
         Account accountToFind = accounts[random.Next(accounts.Count - 1)];
+
+        accountToFind.Activation.Expiration = now;
+        accountToFind.Activation.Code = "Test";
 
         GetAllAccountsOptions getAllOptions = new()
                                               {
@@ -190,7 +201,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                              {
                                  Username = account.Username,
                                  ActivationCode = "Test",
-                                 Expiration = DateTime.UtcNow
+                                 Expiration = now
                              };
             
             await _sut.CreateAsync(account, activation);
@@ -352,10 +363,13 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                              Expiration = DateTime.UtcNow
                          };
 
+        account.Activation.Code = "Test";
+        account.Activation.Expiration = DateTime.UtcNow;
+
         await _sut.CreateAsync(account, activation);
         
         // Act
-        Account? result = await _sut.GetByEmailAsync(account.Email);
+        Account? result = await _sut.GetByEmailAsync(account.Email.ToLowerInvariant());
 
         // Assert
         result.Should().NotBeNull();
@@ -394,11 +408,14 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                              ActivationCode = "Test",
                              Expiration = DateTime.UtcNow
                          };
+        
+        account.Activation.Code = "Test";
+        account.Activation.Expiration = DateTime.UtcNow;
 
         await _sut.CreateAsync(account, activation);
         
         // Act
-        Account? result = await _sut.GetByUsernameAsync(account.Username);
+        Account? result = await _sut.GetByUsernameAsync(account.Username.ToLowerInvariant());
 
         // Assert
         result.Should().NotBeNull();
@@ -430,6 +447,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                              ActivationCode = "Test",
                              Expiration = DateTime.UtcNow
                          };
+        
+        account.Activation.Code = "Test";
+        account.Activation.Expiration = DateTime.UtcNow;
 
         await _sut.CreateAsync(account, activation, CancellationToken.None);
 
@@ -439,6 +459,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                        {
                                            FirstName = "Updated First Name",
                                            LastName = "Updated Last Name",
+                                           Username = "",
+                                           Password = "",
+                                           Email = "",
                                            AccountStatus = ctr.AccountStatus.banned,
                                            AccountRole = ctr.AccountRole.trusted
                                        };

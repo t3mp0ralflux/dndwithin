@@ -88,7 +88,7 @@ public class AccountController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost(ApiEndpoints.Accounts.Activate)]
+    [HttpGet(ApiEndpoints.Accounts.Activate)]
     public async Task<IActionResult> Activate([FromRoute] string username, [FromRoute] string activationcode, CancellationToken token)
     {
         AccountActivation activationRequest = new AccountActivation()
@@ -107,5 +107,13 @@ public class AccountController : ControllerBase
         AccountActivationResponse response = activationRequest.ToResponse();
 
         return Ok(response);
+    }
+
+    [HttpPost(ApiEndpoints.Accounts.ResendActivation)]
+    public async Task<IActionResult> ResendActivation([FromRoute] string username, [FromRoute] string activationCode, CancellationToken token)
+    {
+        var resendActivationResult = await _accountService.ResendActivation(username, activationCode, token);
+
+        return Ok();
     }
 }

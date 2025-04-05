@@ -2,6 +2,7 @@
 using DNDWithin.Application.Models.System;
 using DNDWithin.Application.Repositories;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace DNDWithin.Application.Services.Implementation;
 
@@ -14,8 +15,9 @@ public class AccountService : IAccountService
     private readonly IGlobalSettingsService _globalSettingsService;
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ILogger<AccountService> _logger;
 
-    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher, IGlobalSettingsService globalSettingsService, IEmailService emailService)
+    public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher, IGlobalSettingsService globalSettingsService, IEmailService emailService, ILogger<AccountService> logger)
     {
         _accountRepository = accountRepository;
         _accountValidator = accountValidator;
@@ -24,6 +26,7 @@ public class AccountService : IAccountService
         _passwordHasher = passwordHasher;
         _globalSettingsService = globalSettingsService;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<bool> CreateAsync(Account account, CancellationToken token = default)
@@ -31,60 +34,29 @@ public class AccountService : IAccountService
         await _accountValidator.ValidateAndThrowAsync(account, token);
         account.CreatedUtc = _dateTimeProvider.GetUtcNow();
         account.UpdatedUtc = _dateTimeProvider.GetUtcNow();
-        account.Password = _passwordHasher.Hash(account.Password!);
-
-        int expirationHours = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACCOUNT_ACTIVATION_EXPIRATION_HOURS, 8, token);
-
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           Expiration = _dateTimeProvider.GetUtcNow().AddHours(expirationHours),
-                                           ActivationCode = _passwordHasher.CreateActivationToken()
-                                       };
+        account.Password = _passwordHasher.Hash(account.Password);
+        
+        (int expirationMinutes, AccountActivation activation) = await CreateActivationData(account, token);
 
         bool success = await _accountRepository.CreateAsync(account, activation, token);
 
-        if (success)
+        if (!success)
         {
-            string? linkFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty, token);
-            if (string.IsNullOrWhiteSpace(linkFormat))
-            {
-                throw new Exception("Activation Link not found"); // can't do anything with nothing. TODO:MUST: make this less visible to the end user and log this exception to Grafana or Jenkins or whatever.
-            }
-
-            string? serviceUsername = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty, token);
-
-            if (string.IsNullOrWhiteSpace(serviceUsername))
-            {
-                throw new Exception("Service Account username not found"); // TODO:MUST: make this less visible to the end user and log this exception to Grafana or Jenkins or whatever.
-            }
-
-            Account? serviceAccount = await _accountRepository.GetByUsernameAsync(serviceUsername, token);
-            if (serviceAccount is null)
-            {
-                throw new Exception("Service Account not found"); // TODO:MUST: make this less visible to the end user and log this exception to Grafana or Jenkins or whatever.
-            }
-
-            EmailData data = new()
-                             {
-                                 Id = Guid.NewGuid(),
-                                 ShouldSend = true,
-                                 SendAttempts = 0,
-                                 SendAfterUtc = _dateTimeProvider.GetUtcNow(),
-                                 SenderAccountId = serviceAccount.Id,
-                                 ReceiverAccountId = account.Id,
-                                 SenderEmail = serviceAccount.Email,
-                                 RecipientEmail = account.Email,
-                                 Body = string.Format(linkFormat, account.Username, activation.ActivationCode), // TODO:MUST: this will be pre-formatted HTML for emails with standard warnings in it.
-                                 ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created;"
-                             };
-
-            _emailService.QueueEmail(data, token); // fire and forget, no waiting.
+            return false;
         }
 
-        return success;
-    }
+        try
+        {
+            await QueueActivationEmail(account, activation, expirationMinutes, token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+        }
 
+        return true;
+    }
+    
     public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token = default)
     {
         return await _accountRepository.GetByIdAsync(id, token);
@@ -104,12 +76,16 @@ public class AccountService : IAccountService
 
     public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
     {
-        return await _accountRepository.GetByEmailAsync(email, token);
+        string emailLowered = email.ToLowerInvariant();
+        
+        return await _accountRepository.GetByEmailAsync(emailLowered, token);
     }
 
     public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
     {
-        return await _accountRepository.GetByUsernameAsync(userName.ToLowerInvariant(), token);
+        string usernameLowered = userName.ToLowerInvariant();
+        
+        return await _accountRepository.GetByUsernameAsync(usernameLowered, token);
     }
 
     public async Task<Account?> UpdateAsync(Account account, CancellationToken token = default)
@@ -152,5 +128,66 @@ public class AccountService : IAccountService
         return !activated
             ? (false, "Activation failed, please try again")
             : (activated, "Activation successful");
+    }
+
+    public async Task<bool> ResendActivation(string username, string activationCode, CancellationToken token = default)
+    {
+        Account? account = await _accountRepository.GetByUsernameAsync(username, token);
+        
+        if (account is null)
+        {
+            return false;
+        }
+        
+        if (!string.Equals(account.Activation.Code, activationCode))
+        {
+            throw new ValidationException("Validation link no longer valid"); // don't let them use old codes.
+        }
+        
+        (int expirationMinutes, AccountActivation activation) = await CreateActivationData(account, token);
+        
+        await _accountRepository.UpdateActivationAsync(account.Id, activation, token);
+
+        await QueueActivationEmail(account, activation, expirationMinutes, token);
+
+        return true;
+    }
+    
+    private async Task QueueActivationEmail(Account account, AccountActivation activation, int expirationMinutes, CancellationToken token)
+    {
+        string? linkFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty, token);
+        string? emailFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty, token);
+        string? serviceUsername = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty, token);
+
+        Account? serviceAccount = await _accountRepository.GetByUsernameAsync(serviceUsername, token);
+
+        EmailData data = new()
+                         {
+                             Id = Guid.NewGuid(),
+                             ShouldSend = true,
+                             SendAttempts = 0,
+                             SendAfterUtc = _dateTimeProvider.GetUtcNow(),
+                             SenderAccountId = serviceAccount.Id,
+                             ReceiverAccountId = account.Id,
+                             SenderEmail = serviceAccount.Email,
+                             RecipientEmail = account.Email,
+                             Body = string.Format(emailFormat, string.Format(linkFormat, account.Username, activation.ActivationCode), expirationMinutes), // TODO:MUST: this will be pre-formatted HTML for emails with standard warnings in it.
+                             ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created;"
+                         };
+
+        _emailService.QueueEmail(data, token); // fire and forget, no waiting.
+    }
+
+    private async Task<(int expirationMinutes, AccountActivation activation)> CreateActivationData(Account account, CancellationToken token)
+    {
+        int expirationMinutes = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACCOUNT_ACTIVATION_EXPIRATION_MINS, 5, token);
+
+        AccountActivation activation = new()
+                                       {
+                                           Username = account.Username,
+                                           Expiration = _dateTimeProvider.GetUtcNow().AddMinutes(expirationMinutes),
+                                           ActivationCode = _passwordHasher.CreateActivationToken()
+                                       };
+        return (expirationMinutes, activation);
     }
 }

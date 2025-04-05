@@ -197,6 +197,9 @@ public class AccountControllerTests
                                        {
                                            FirstName = "New First",
                                            LastName = "New Last",
+                                           Username = "",
+                                           Password = "",
+                                           Email = "",
                                            AccountStatus = (ctr.AccountStatus)account.AccountStatus,
                                            AccountRole = (ctr.AccountRole)account.AccountRole
                                        };
