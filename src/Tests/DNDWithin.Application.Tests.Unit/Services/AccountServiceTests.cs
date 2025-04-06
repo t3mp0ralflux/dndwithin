@@ -19,11 +19,12 @@ public class AccountServiceTests
     private readonly IAccountRepository _accountRepository = Substitute.For<IAccountRepository>();
     private readonly IValidator<Account> _accountValidator = Substitute.For<IValidator<Account>>();
     private readonly IDateTimeProvider _dateTimeProvider = Substitute.For<IDateTimeProvider>();
+    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
+    private readonly IGlobalSettingsService _globalSettingsService = Substitute.For<IGlobalSettingsService>();
+    private readonly ILogger<AccountService> _logger = Substitute.For<ILogger<AccountService>>();
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator = Substitute.For<IValidator<GetAllAccountsOptions>>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
-    private readonly IGlobalSettingsService _globalSettingsService = Substitute.For<IGlobalSettingsService>();
-    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
-    private readonly ILogger<AccountService> _logger = Substitute.For<ILogger<AccountService>>();
+    public EquivalencyOptions<Account> _EquivalencyOptions;
 
     public AccountServiceTests()
     {
@@ -33,7 +34,6 @@ public class AccountServiceTests
     }
 
     public AccountService _sut { get; set; }
-    public EquivalencyOptions<Account> _EquivalencyOptions;
 
     [Fact]
     public async Task CreateAsync_ShouldReturnFalse_WhenAccountIsNotCreated()
@@ -41,17 +41,17 @@ public class AccountServiceTests
         // Arrange
         DateTime now = DateTime.UtcNow;
         Account account = Fakes.GenerateAccount();
-        
+
         _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(false);
         _dateTimeProvider.GetUtcNow().Returns(now);
-        
+
         // Act
         bool result = await _sut.CreateAsync(account.Clone());
 
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Fact]
     public async Task CreateAsync_ShouldInsertValidInformationAndQueueEmail_WhenAccountIsCreated()
     {
@@ -60,33 +60,33 @@ public class AccountServiceTests
         Account account = Fakes.GenerateAccount();
         Account serviceAccount = Fakes.GenerateAccount();
 
-        var testLinkFormat = $"Username: {account.Username}, Password: Test";
+        string testLinkFormat = $"Username: {account.Username}, Password: Test";
 
-        var testEmailFormat = $"Data: {testLinkFormat}";
-            
+        string testEmailFormat = $"Data: {testLinkFormat}";
+
         _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
         _dateTimeProvider.GetUtcNow().Returns(now);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
         _passwordHasher.CreateActivationToken().Returns("Test");
         _passwordHasher.Hash(account.Password).Returns("TestHash");
-        
+
         _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
         _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
         _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
 
-        var expectedQueuedEmail = new EmailData()
-                                  {
-                                      Id = Guid.NewGuid(),
-                                      ShouldSend = true,
-                                      SendAttempts = 0,
-                                      SendAfterUtc = now,
-                                      SenderAccountId = serviceAccount.Id,
-                                      ReceiverAccountId = account.Id,
-                                      SenderEmail = serviceAccount.Email,
-                                      RecipientEmail = account.Email,
-                                      Body = string.Format(testEmailFormat, string.Format(testLinkFormat, account.Username, "Test")),
-                                      ResponseLog = $"{now}: Email created;"
-                                  };
+        EmailData expectedQueuedEmail = new()
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            ShouldSend = true,
+                                            SendAttempts = 0,
+                                            SendAfterUtc = now,
+                                            SenderAccountId = serviceAccount.Id,
+                                            ReceiverAccountId = account.Id,
+                                            SenderEmail = serviceAccount.Email,
+                                            RecipientEmail = account.Email,
+                                            Body = string.Format(testEmailFormat, string.Format(testLinkFormat, account.Username, "Test")),
+                                            ResponseLog = $"{now}: Email created;"
+                                        };
 
         // Act
         bool result = await _sut.CreateAsync(account.Clone());
@@ -98,14 +98,14 @@ public class AccountServiceTests
 
         Account? createdAccount = (Account?)createCall.GetArguments().FirstOrDefault();
         createdAccount.Should().NotBeNull();
-        
+
         createdAccount.CreatedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
         createdAccount.UpdatedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
 
         ICall? emailCall = _emailService.ReceivedCalls().FirstOrDefault();
         emailCall.Should().NotBeNull();
 
-        var queuedEmail = (EmailData?)emailCall.GetArguments().FirstOrDefault();
+        EmailData? queuedEmail = (EmailData?)emailCall.GetArguments().FirstOrDefault();
         queuedEmail.Should().NotBeNull();
 
         queuedEmail.Should().BeEquivalentTo(expectedQueuedEmail, options =>
@@ -147,11 +147,11 @@ public class AccountServiceTests
     public async Task GetByIdAsync_ReturnsNull_WhenIdNotFound()
     {
         // Arrange
-        var id = Guid.NewGuid();
+        Guid id = Guid.NewGuid();
         _accountRepository.GetByIdAsync(id).Returns((Account?)null);
-        
+
         // Act
-        var result = await _sut.GetByIdAsync(id);
+        Account? result = await _sut.GetByIdAsync(id);
 
         // Assert
         result.Should().BeNull();
@@ -161,11 +161,11 @@ public class AccountServiceTests
     public async Task GetByIdAsync_ReturnsAccount_WhenIdIsFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         _accountRepository.GetByIdAsync(account.Id).Returns(account);
-        
+
         // Act
-        var result = await _sut.GetByIdAsync(account.Id);
+        Account? result = await _sut.GetByIdAsync(account.Id);
 
         // Assert
         result.Should().NotBeNull();
@@ -176,36 +176,36 @@ public class AccountServiceTests
     public async Task GetAllAsync_ReturnsEmptyList_WhenNothingIsFound()
     {
         // Arrange
-        var options = new GetAllAccountsOptions()
-                      {
-                          Page = 1,
-                          PageSize = 5
-                      };
+        GetAllAccountsOptions options = new()
+                                        {
+                                            Page = 1,
+                                            PageSize = 5
+                                        };
 
         _accountRepository.GetAllAsync(options).Returns([]);
-        
+
         // Act
-        var result = await _sut.GetAllAsync(options);
+        IEnumerable<Account> result = await _sut.GetAllAsync(options);
 
         // Assert
         result.Should().NotBeNull();
         result.Should().BeEmpty();
     }
-    
+
     [Fact]
     public async Task GetAllAsync_ReturnsList_WhenItemsAreFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
-        var options = new GetAllAccountsOptions()
-                      {
-                          UserName = account.Username,
-                          Page = 1,
-                          PageSize = 5
-                      };
+        Account account = Fakes.GenerateAccount();
+        GetAllAccountsOptions options = new()
+                                        {
+                                            UserName = account.Username,
+                                            Page = 1,
+                                            PageSize = 5
+                                        };
 
         _accountRepository.GetAllAsync(options).Returns([account]);
-        
+
         // Act
         Account[] result = (await _sut.GetAllAsync(options)).ToArray();
 
@@ -220,14 +220,14 @@ public class AccountServiceTests
     {
         // Arrange
         _accountRepository.GetCountAsync(Arg.Any<string?>()).Returns(0);
-        
+
         // Act
-        var result = await _sut.GetCountAsync("Test");
+        int result = await _sut.GetCountAsync("Test");
 
         // Assert
         result.Should().Be(0);
     }
-    
+
     [Theory]
     [InlineData(1)]
     [InlineData(5)]
@@ -236,22 +236,22 @@ public class AccountServiceTests
     {
         // Arrange
         _accountRepository.GetCountAsync(Arg.Any<string?>()).Returns(count);
-        
+
         // Act
-        var result = await _sut.GetCountAsync("Test");
+        int result = await _sut.GetCountAsync("Test");
 
         // Assert
         result.Should().Be(count);
     }
-    
+
     [Fact]
     public async Task GetByEmailAsync_ReturnsNull_WhenEmailNotFound()
     {
         // Arrange
         _accountRepository.GetByEmailAsync("test@test.com").Returns((Account?)null);
-        
+
         // Act
-        var result = await _sut.GetByEmailAsync("test@test.com");
+        Account? result = await _sut.GetByEmailAsync("test@test.com");
 
         // Assert
         result.Should().BeNull();
@@ -261,25 +261,25 @@ public class AccountServiceTests
     public async Task GetByEmailAsync_ReturnsAccount_WhenEmailIsFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         _accountRepository.GetByEmailAsync(account.Email.ToLowerInvariant()).Returns(account);
-        
+
         // Act
-        var result = await _sut.GetByEmailAsync(account.Email);
+        Account? result = await _sut.GetByEmailAsync(account.Email);
 
         // Assert
         result.Should().NotBeNull();
         result.Should().BeEquivalentTo(account, _ => _EquivalencyOptions);
     }
-    
+
     [Fact]
     public async Task GetByUsernameAsync_ReturnsNull_WhenUsernameNotFound()
     {
         // Arrange
         _accountRepository.GetByUsernameAsync("test").Returns((Account?)null);
-        
+
         // Act
-        var result = await _sut.GetByUsernameAsync("test");
+        Account? result = await _sut.GetByUsernameAsync("test");
 
         // Assert
         result.Should().BeNull();
@@ -289,11 +289,11 @@ public class AccountServiceTests
     public async Task GetByUsernameAsync_ReturnsAccount_WhenUsernameIsFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         _accountRepository.GetByUsernameAsync(account.Username.ToLowerInvariant()).Returns(account);
-        
+
         // Act
-        var result = await _sut.GetByUsernameAsync(account.Username);
+        Account? result = await _sut.GetByUsernameAsync(account.Username);
 
         // Assert
         result.Should().NotBeNull();
@@ -304,11 +304,11 @@ public class AccountServiceTests
     public async Task UpdateAsync_ReturnsNull_WhenAccountIsNotFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         _accountRepository.ExistsByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         // Act
-        var result = await _sut.UpdateAsync(account);
+        Account? result = await _sut.UpdateAsync(account);
 
         // Assert
         result.Should().BeNull();
@@ -318,13 +318,13 @@ public class AccountServiceTests
     public async Task UpdateAsync_ReturnsAccount_WhenUpdateIsSuccessful()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
 
         _accountRepository.ExistsByIdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(true);
         _accountRepository.UpdateAsync(account, Arg.Any<CancellationToken>()).Returns(true);
-        
+
         // Act
-        var result = await _sut.UpdateAsync(account, CancellationToken.None);
+        Account? result = await _sut.UpdateAsync(account, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -335,11 +335,11 @@ public class AccountServiceTests
     public async Task DeleteAsync_ShouldReturnFalse_WhenIdIsNotFound()
     {
         // Arrange
-        var id = Guid.NewGuid();
+        Guid id = Guid.NewGuid();
         _accountRepository.ExistsByIdAsync(id).Returns(false);
-        
+
         // Act
-        var result = await _sut.DeleteAsync(id);
+        bool result = await _sut.DeleteAsync(id);
 
         // Assert
         result.Should().BeFalse();
@@ -349,12 +349,12 @@ public class AccountServiceTests
     public async Task DeleteAsync_ShouldReturnTrue_WhenIdIsFound()
     {
         // Arrange
-        var id = Guid.NewGuid();
+        Guid id = Guid.NewGuid();
         _accountRepository.ExistsByIdAsync(id).Returns(true);
         _accountRepository.DeleteAsync(id).Returns(true);
-        
+
         // Act
-        var result = await _sut.DeleteAsync(id);
+        bool result = await _sut.DeleteAsync(id);
 
         // Assert
         result.Should().BeTrue();

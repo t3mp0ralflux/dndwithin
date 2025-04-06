@@ -2,7 +2,6 @@
 using Dapper;
 using DNDWithin.Application.Database;
 using DNDWithin.Application.Models;
-using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Models.GlobalSettings;
 
 namespace DNDWithin.Application.Repositories.Implementation;
@@ -20,7 +19,7 @@ public class GlobalSettingsRepository : IGlobalSettingsRepository
     public async Task<bool> CreateSetting(GlobalSetting setting, CancellationToken token = default)
     {
         using IDbConnection connection = await _connectionFactory.CreateConnectionAsync(token);
-        var result = await connection.ExecuteAsync(new CommandDefinition("""
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
                                                                          insert into globalsettings(id, name, value)
                                                                          values(@id, @name, @value)
                                                                          """, setting, cancellationToken: token));

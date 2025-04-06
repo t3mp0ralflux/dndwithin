@@ -1,5 +1,4 @@
 ﻿using DNDWithin.Api.Mapping;
-using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Models.GlobalSettings;
 using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.GlobalSetting;

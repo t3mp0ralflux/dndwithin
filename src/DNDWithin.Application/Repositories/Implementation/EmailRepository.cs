@@ -26,7 +26,7 @@ public class EmailRepository : IEmailRepository
                                                                          insert into email (id, account_id_sender, account_id_receiver, should_send, sent_utc, send_after_utc, sender_email, recipient_email, body, response_log, send_attempts)
                                                                          values (@Id, @SenderAccountId, @ReceiverAccountId, @ShouldSend, @SentUtc, @SendAfterUtc, @SenderEmail, @RecipientEmail, @Body, @ResponseLog, @SendAttempts)
                                                                          """, emailData, cancellationToken: token));
-        
+
         transaction.Commit();
 
         return result > 0;
@@ -37,12 +37,12 @@ public class EmailRepository : IEmailRepository
         using IDbConnection connection = await _dbConnectionFactory.CreateConnectionAsync(token);
 
         IEnumerable<EmailData> result = await connection.QueryAsync<EmailData>(new CommandDefinition("""
-                                                                                                      select id, account_id_sender as SenderAccountId, account_id_receiver as ReceiverAccountId, should_send as ShouldSend, sent_utc as SentUtc, send_after_utc as SendAfterUtc, sender_email as SenderEmail, recipient_email as RecipientEmail, body, response_log as ResponseLog, send_attempts as SendAttempts  
-                                                                                                      from email
-                                                                                                      where send_after_utc <= @Now
-                                                                                                      and should_send = true
-                                                                                                      limit @batchSize
-                                                                                                      """, new { Now = _dateTimeProvider.GetUtcNow(), batchSize }, cancellationToken: token));
+                                                                                                     select id, account_id_sender as SenderAccountId, account_id_receiver as ReceiverAccountId, should_send as ShouldSend, sent_utc as SentUtc, send_after_utc as SendAfterUtc, sender_email as SenderEmail, recipient_email as RecipientEmail, body, response_log as ResponseLog, send_attempts as SendAttempts  
+                                                                                                     from email
+                                                                                                     where send_after_utc <= @Now
+                                                                                                     and should_send = true
+                                                                                                     limit @batchSize
+                                                                                                     """, new { Now = _dateTimeProvider.GetUtcNow(), batchSize }, cancellationToken: token));
 
         return result.ToList();
     }

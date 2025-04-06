@@ -5,8 +5,8 @@ namespace DNDWithin.Application.Services.Implementation;
 
 public class EmailService : IEmailService
 {
-    private readonly IEmailRepository _emailRepository;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IEmailRepository _emailRepository;
 
     public EmailService(IEmailRepository emailRepository, IDateTimeProvider dateTimeProvider)
     {
@@ -17,7 +17,7 @@ public class EmailService : IEmailService
     public async Task QueueEmail(EmailData emailData, CancellationToken token = default)
     {
         emailData.ResponseLog += $"{_dateTimeProvider.GetUtcNow()}: Email Queued;";
-        
+
         await _emailRepository.QueueEmail(emailData, token);
     }
 

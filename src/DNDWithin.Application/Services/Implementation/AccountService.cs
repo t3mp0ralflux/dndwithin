@@ -13,9 +13,9 @@ public class AccountService : IAccountService
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IEmailService _emailService;
     private readonly IGlobalSettingsService _globalSettingsService;
+    private readonly ILogger<AccountService> _logger;
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly ILogger<AccountService> _logger;
 
     public AccountService(IAccountRepository accountRepository, IValidator<Account> accountValidator, IDateTimeProvider dateTimeProvider, IValidator<GetAllAccountsOptions> optionsValidator, IPasswordHasher passwordHasher, IGlobalSettingsService globalSettingsService, IEmailService emailService, ILogger<AccountService> logger)
     {
@@ -35,7 +35,7 @@ public class AccountService : IAccountService
         account.CreatedUtc = _dateTimeProvider.GetUtcNow();
         account.UpdatedUtc = _dateTimeProvider.GetUtcNow();
         account.Password = _passwordHasher.Hash(account.Password);
-        
+
         (int expirationMinutes, AccountActivation activation) = await CreateActivationData(account, token);
 
         bool success = await _accountRepository.CreateAsync(account, activation, token);
@@ -56,7 +56,7 @@ public class AccountService : IAccountService
 
         return true;
     }
-    
+
     public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token = default)
     {
         return await _accountRepository.GetByIdAsync(id, token);
@@ -77,14 +77,14 @@ public class AccountService : IAccountService
     public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
     {
         string emailLowered = email.ToLowerInvariant();
-        
+
         return await _accountRepository.GetByEmailAsync(emailLowered, token);
     }
 
     public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
     {
         string usernameLowered = userName.ToLowerInvariant();
-        
+
         return await _accountRepository.GetByUsernameAsync(usernameLowered, token);
     }
 
@@ -133,26 +133,26 @@ public class AccountService : IAccountService
     public async Task<bool> ResendActivation(string username, string activationCode, CancellationToken token = default)
     {
         Account? account = await _accountRepository.GetByUsernameAsync(username, token);
-        
+
         if (account is null)
         {
             return false;
         }
-        
+
         if (!string.Equals(account.Activation.Code, activationCode))
         {
             throw new ValidationException("Validation link no longer valid"); // don't let them use old codes.
         }
-        
+
         (int expirationMinutes, AccountActivation activation) = await CreateActivationData(account, token);
-        
+
         await _accountRepository.UpdateActivationAsync(account.Id, activation, token);
 
         await QueueActivationEmail(account, activation, expirationMinutes, token);
 
         return true;
     }
-    
+
     private async Task QueueActivationEmail(Account account, AccountActivation activation, int expirationMinutes, CancellationToken token)
     {
         string? linkFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty, token);

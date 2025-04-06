@@ -2,6 +2,7 @@
 using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Validators.Accounts;
 using FluentAssertions;
+using FluentAssertions.Specialized;
 using FluentValidation;
 using FluentValidation.Results;
 using NSubstitute;
@@ -11,37 +12,37 @@ namespace DNDWithin.Application.Tests.Unit.Validators;
 
 public class AccountValidatorTests
 {
+    private readonly IAccountRepository _accountRepository = Substitute.For<IAccountRepository>();
+    public AccountValidator _sut;
+
     public AccountValidatorTests()
     {
         _sut = new AccountValidator(_accountRepository);
     }
 
-    private readonly IAccountRepository _accountRepository = Substitute.For<IAccountRepository>();
-    public AccountValidator _sut;
-
     [Fact]
     public async Task Validator_ThrowsError_WhenFieldsAreMissing()
     {
         // Arrange
-        var account = new Account()
-                      {
-                          Id = Guid.NewGuid(),
-                          FirstName = "",
-                          LastName = "",
-                          Username = "",
-                          Email = "",
-                          Password = ""
-                      };
+        Account account = new()
+                          {
+                              Id = Guid.NewGuid(),
+                              FirstName = "",
+                              LastName = "",
+                              Username = "",
+                              Email = "",
+                              Password = ""
+                          };
 
         List<string> expectedProperties = ["Email", "FirstName", "LastName", "Password", "Username"];
-        
+
         // Act
-        var action = async () => await _sut.ValidateAndThrowAsync(account);
+        Func<Task> action = async () => await _sut.ValidateAndThrowAsync(account);
 
         // Assert
-        var result = await action.Should().ThrowAsync<ValidationException>();
+        ExceptionAssertions<ValidationException>? result = await action.Should().ThrowAsync<ValidationException>();
 
-        var errorList = result.Subject.FirstOrDefault()?.Errors.Select(x=>x.PropertyName).Distinct().Order();
+        IOrderedEnumerable<string>? errorList = result.Subject.FirstOrDefault()?.Errors.Select(x => x.PropertyName).Distinct().Order();
 
         errorList.Should().BeEquivalentTo(expectedProperties);
     }
@@ -50,42 +51,42 @@ public class AccountValidatorTests
     public async Task Validator_ThrowsError_WhenEmailIsAlreadyInUse()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
 
         _accountRepository.ExistsByEmailAsync(account.Email!).Returns(true);
-        
+
         // Act
-        var action = async () => await _sut.ValidateAndThrowAsync(account);
+        Func<Task> action = async () => await _sut.ValidateAndThrowAsync(account);
 
         // Assert
-        var result = await action.Should().ThrowAsync<ValidationException>();
+        ExceptionAssertions<ValidationException>? result = await action.Should().ThrowAsync<ValidationException>();
 
         List<ValidationFailure>? errors = result.Subject.FirstOrDefault()?.Errors.ToList();
         errors.Should().ContainSingle();
 
-        var error = errors.First();
+        ValidationFailure error = errors.First();
         error.PropertyName.Should().Be("Email");
         error.ErrorMessage.Should().Be("Email already in use. Please login instead");
     }
-    
+
     [Fact]
     public async Task Validator_ThrowsError_WhenUsernameIsAlreadyInUse()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
 
         _accountRepository.ExistsByUsernameAsync(account.Username!).Returns(true);
-        
+
         // Act
-        var action = async () => await _sut.ValidateAndThrowAsync(account);
+        Func<Task> action = async () => await _sut.ValidateAndThrowAsync(account);
 
         // Assert
-        var result = await action.Should().ThrowAsync<ValidationException>();
+        ExceptionAssertions<ValidationException>? result = await action.Should().ThrowAsync<ValidationException>();
 
         List<ValidationFailure>? errors = result.Subject.FirstOrDefault()?.Errors.ToList();
         errors.Should().ContainSingle();
 
-        var error = errors.First();
+        ValidationFailure error = errors.First();
         error.PropertyName.Should().Be("Username");
         error.ErrorMessage.Should().Be("Username already in use");
     }
@@ -94,12 +95,12 @@ public class AccountValidatorTests
     public async Task Validator_DoesNotThrowError_WhenValidationSucceeds()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         _accountRepository.ExistsByEmailAsync(account.Email!).Returns(false);
         _accountRepository.ExistsByUsernameAsync(account.Username!).Returns(false);
 
         // Act
-        var action = async () => await _sut.ValidateAndThrowAsync(account);
+        Func<Task> action = async () => await _sut.ValidateAndThrowAsync(account);
 
         // Assert
         await action.Should().NotThrowAsync();

@@ -52,7 +52,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<IEmailService, EmailService>();
 
         services.AddHostedService<EmailVerificationService>();
-        
+
         return services;
     }
 }

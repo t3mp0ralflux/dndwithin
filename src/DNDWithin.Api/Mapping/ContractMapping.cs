@@ -34,7 +34,7 @@ public static class ContractMapping
                    FirstName = request.FirstName,
                    LastName = request.LastName,
                    Username = string.Empty, // not used, but required
-                   Email = string.Empty,    // not used, but required
+                   Email = string.Empty, // not used, but required
                    Password = string.Empty, // not used, but required
                    AccountStatus = (AccountStatus)request.AccountStatus,
                    AccountRole = (AccountRole)request.AccountRole

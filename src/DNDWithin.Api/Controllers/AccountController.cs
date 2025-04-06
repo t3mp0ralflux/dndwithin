@@ -91,12 +91,12 @@ public class AccountController : ControllerBase
     [HttpGet(ApiEndpoints.Accounts.Activate)]
     public async Task<IActionResult> Activate([FromRoute] string username, [FromRoute] string activationcode, CancellationToken token)
     {
-        AccountActivation activationRequest = new AccountActivation()
+        AccountActivation activationRequest = new()
                                               {
                                                   ActivationCode = activationcode,
-                                                  Username = username,
+                                                  Username = username
                                               };
-        
+
         (bool isActive, string reason) activationResult = await _accountService.ActivateAsync(activationRequest, token);
 
         if (!activationResult.isActive)
@@ -112,7 +112,7 @@ public class AccountController : ControllerBase
     [HttpPost(ApiEndpoints.Accounts.ResendActivation)]
     public async Task<IActionResult> ResendActivation([FromRoute] string username, [FromRoute] string activationCode, CancellationToken token)
     {
-        var resendActivationResult = await _accountService.ResendActivation(username, activationCode, token);
+        bool resendActivationResult = await _accountService.ResendActivation(username, activationCode, token);
 
         return Ok();
     }

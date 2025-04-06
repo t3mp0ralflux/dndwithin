@@ -1,5 +1,4 @@
-﻿using DNDWithin.Application.Models.Accounts;
-using DNDWithin.Application.Models.GlobalSettings;
+﻿using DNDWithin.Application.Models.GlobalSettings;
 using DNDWithin.Application.Repositories;
 using FluentValidation;
 
@@ -52,7 +51,7 @@ public class GlobalSettingsService : IGlobalSettingsService
         {
             return defaultValue;
         }
-        
+
         try
         {
             // Type? type = Nullable.GetUnderlyingType(typeof(T));
@@ -64,9 +63,8 @@ public class GlobalSettingsService : IGlobalSettingsService
             // return (T)Convert.ChangeType(setting.Name, type);
 
             return (T)Convert.ChangeType(setting.Value, typeof(T));
-
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             // TODO:MAYBE: log this?
             return defaultValue;

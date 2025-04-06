@@ -60,10 +60,10 @@ public class AccountRepository : IAccountRepository
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
         int result = await connection.QuerySingleOrDefaultAsync<int>(new CommandDefinition("""
-                                                                                                    select count(id) 
-                                                                                                    from account 
-                                                                                                    where id = @id 
-                                                                                                    """, new { id }, cancellationToken: token));
+                                                                                           select count(id) 
+                                                                                           from account 
+                                                                                           where id = @id 
+                                                                                           """, new { id }, cancellationToken: token));
         return result > 0;
     }
 
@@ -72,10 +72,10 @@ public class AccountRepository : IAccountRepository
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
         int result = await connection.QuerySingleOrDefaultAsync<int>(new CommandDefinition("""
-                                                                                                    select count(id) 
-                                                                                                    from account 
-                                                                                                    where lower(username) = @userName 
-                                                                                                    """, new { userName }, cancellationToken: token));
+                                                                                           select count(id) 
+                                                                                           from account 
+                                                                                           where lower(username) = @userName 
+                                                                                           """, new { userName }, cancellationToken: token));
         return result > 0;
     }
 
@@ -84,10 +84,10 @@ public class AccountRepository : IAccountRepository
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
         int result = await connection.QuerySingleOrDefaultAsync<int>(new CommandDefinition("""
-                                                                                                    select count(id) 
-                                                                                                    from account 
-                                                                                                    where lower(email) = @email 
-                                                                                                    """, new { email }, cancellationToken: token));
+                                                                                           select count(id) 
+                                                                                           from account 
+                                                                                           where lower(email) = @email 
+                                                                                           """, new { email }, cancellationToken: token));
         return result > 0;
     }
 
@@ -267,7 +267,7 @@ public class AccountRepository : IAccountRepository
                                                                          set code = @ActivationCode, expiration = @Expiration
                                                                          where account_id = @accountId
                                                                          """, new { accountId, accountActivation.ActivationCode, accountActivation.Expiration }));
-        
+
         transaction.Commit();
         return result > 0;
     }

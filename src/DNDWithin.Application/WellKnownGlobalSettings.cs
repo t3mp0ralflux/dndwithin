@@ -9,5 +9,4 @@ public static class WellKnownGlobalSettings
     public const string EMAIL_SEND_BATCH_LIMIT = "email_send_batch_limit";
     public const string JWT_TOKEN_SECRET = "jwt_token_secret";
     public const string SERVICE_ACCOUNT_USERNAME = "service_account_username";
-
 }
