@@ -406,7 +406,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         await _sut.CreateAsync(account, activation);
 
         // Act
-        Account? result = await _sut.GetByUsernameAsync(account.Username.ToLowerInvariant());
+        Account? result = await _sut.GetByUsernameAsync(account.Username);
 
         // Assert
         result.Should().NotBeNull();
@@ -623,5 +623,70 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         // Assert
         result.Should().BeTrue();
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task ActivateAsync_ShouldReturnTrueAndDeleteActivation_WhenAccountIsActivated()
+    {
+        // Arrange
+        Account account = Fakes.GenerateAccount();
+        account.Activation.Code = "Test";
+        account.Activation.Expiration = DateTime.Now;
+
+        AccountActivation accountActivation = new()
+                                              {
+                                                  ActivationCode = account.Activation.Code,
+                                                  Expiration = account.Activation.Expiration,
+                                                  Username = account.Username
+                                              };
+
+        await _sut.CreateAsync(account, accountActivation);
+
+        // Act
+        bool result = await _sut.ActivateAsync(account);
+
+        // Assert
+        result.Should().BeTrue();
+
+        Account? activatedAccount = await _sut.GetByIdAsync(account.Id);
+        activatedAccount.Should().NotBeNull();
+        activatedAccount.Activation.Should().BeNull();
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task UpdateActivationAsync_ShouldReturnTrueAndUpdateActivation_WhenActivationInformationIsReRequested()
+    {
+        // Arrange
+        DateTime now = DateTime.UtcNow;
+        Account account = Fakes.GenerateAccount();
+        account.Activation.Code = "Old and Busted";
+        account.Activation.Expiration = DateTime.MinValue;
+
+        AccountActivation oldAccountActivation = new()
+                                                 {
+                                                     Username = account.Username,
+                                                     ActivationCode = account.Activation.Code,
+                                                     Expiration = account.Activation.Expiration
+                                                 };
+
+        AccountActivation updatedAccountActivation = new()
+                                                     {
+                                                         Username = account.Username,
+                                                         ActivationCode = "Test",
+                                                         Expiration = now
+                                                     };
+
+        await _sut.CreateAsync(account, oldAccountActivation);
+
+        // Act
+        bool result = await _sut.UpdateActivationAsync(account.Id, updatedAccountActivation);
+
+        // Assert
+        result.Should().BeTrue();
+
+        Account? updatedAccount = await _sut.GetByIdAsync(account.Id);
+        updatedAccount.Should().NotBeNull();
+        updatedAccount.Activation.Code.Should().Be(updatedAccountActivation.ActivationCode);
+        updatedAccount.Activation.Expiration.Should().BeCloseTo(updatedAccountActivation.Expiration, TimeSpan.FromSeconds(1));
     }
 }

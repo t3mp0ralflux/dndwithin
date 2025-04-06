@@ -67,5 +67,7 @@ public class ApplicationApiFactory : WebApplicationFactory<IApiMarker>, IAsyncLi
                                           services.RemoveAll<IDbConnectionFactory>();
                                           services.AddSingleton<IDbConnectionFactory>(_ => new NpgsqlConnectionFactory(_dbContainer.GetConnectionString()));
                                       });
+
+        builder.UseEnvironment("Testing");
     }
 }

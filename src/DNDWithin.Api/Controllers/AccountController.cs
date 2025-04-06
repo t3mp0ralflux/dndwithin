@@ -6,7 +6,6 @@ using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Responses.Account;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DNDWithin.Api.Controllers;
@@ -99,7 +98,7 @@ public class AccountController : ControllerBase
                                                   Expiration = DateTime.MinValue
                                               };
 
-        var activationResult = await _accountService.ActivateAsync(activationRequest, token);
+        bool activationResult = await _accountService.ActivateAsync(activationRequest, token);
 
         if (!activationResult)
         {

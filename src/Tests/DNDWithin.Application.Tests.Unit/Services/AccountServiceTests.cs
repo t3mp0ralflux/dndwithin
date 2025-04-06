@@ -364,110 +364,110 @@ public class AccountServiceTests
     public async Task ActivateAsync_ShouldThrowValidationException_WhenAccountIsNotFound()
     {
         // Arrange
-        var activation = new AccountActivation()
-                         {
-                             Username = "Test",
-                             ActivationCode = "Test Code",
-                             Expiration = DateTime.UtcNow
-                         };
-        
+        AccountActivation activation = new()
+                                       {
+                                           Username = "Test",
+                                           ActivationCode = "Test Code",
+                                           Expiration = DateTime.UtcNow
+                                       };
+
         // Act
-        var action = async () => await _sut.ActivateAsync(activation);
+        Func<Task<bool>> action = async () => await _sut.ActivateAsync(activation);
 
         // Assert
         await action.Should().ThrowAsync<ValidationException>().WithMessage("No account found");
     }
-    
+
     [Fact]
     public async Task ActivateAsync_ShouldThrowValidationException_WhenActivationCodeIsNotValid()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         account.Activation.Code = "Old and busted";
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
-        
-        var activation = new AccountActivation()
-                         {
-                             Username = account.Username,
-                             ActivationCode = "New Hotness",
-                             Expiration = DateTime.UtcNow
-                         };
-        
+
+        AccountActivation activation = new()
+                                       {
+                                           Username = account.Username,
+                                           ActivationCode = "New Hotness",
+                                           Expiration = DateTime.UtcNow
+                                       };
+
         // Act
-        var action = async () => await _sut.ActivateAsync(activation);
+        Func<Task<bool>> action = async () => await _sut.ActivateAsync(activation);
 
         // Assert
         await action.Should().ThrowAsync<ValidationException>().WithMessage("Activation is invalid");
     }
-    
+
     [Fact]
     public async Task ActivateAsync_ShouldThrowValidationException_WhenActivationExpirationIsNotValid()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         account.Activation.Code = "Test";
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
         _dateTimeProvider.GetUtcNow().Returns(DateTime.UtcNow);
-        
-        var activation = new AccountActivation()
-                         {
-                             Username = account.Username,
-                             ActivationCode = account.Activation.Code,
-                             Expiration = DateTime.MinValue
-                         };
-        
+
+        AccountActivation activation = new()
+                                       {
+                                           Username = account.Username,
+                                           ActivationCode = account.Activation.Code,
+                                           Expiration = DateTime.MinValue
+                                       };
+
         // Act
-        var action = async () => await _sut.ActivateAsync(activation);
+        Func<Task<bool>> action = async () => await _sut.ActivateAsync(activation);
 
         // Assert
         await action.Should().ThrowAsync<ValidationException>().WithMessage("Activation is invalid");
     }
-    
+
     [Fact]
     public async Task ActivateAsync_ShouldReturnFalse_WhenActivationFailsInDb()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         account.Activation.Code = "Test";
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
         _accountRepository.ActivateAsync(Arg.Any<Account>()).Returns(false);
-        
-        var activation = new AccountActivation()
-                         {
-                             Username = account.Username,
-                             ActivationCode = account.Activation.Code,
-                             Expiration = DateTime.MinValue
-                         };
-        
+
+        AccountActivation activation = new()
+                                       {
+                                           Username = account.Username,
+                                           ActivationCode = account.Activation.Code,
+                                           Expiration = DateTime.MinValue
+                                       };
+
         // Act
-        var result = await _sut.ActivateAsync(activation);
+        bool result = await _sut.ActivateAsync(activation);
 
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Fact]
     public async Task ActivateAsync_ShouldReturnTrue_WhenActivationSucceeds()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         account.Activation.Code = "Test";
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
         _accountRepository.ActivateAsync(Arg.Any<Account>()).Returns(true);
-        
-        var activation = new AccountActivation()
-                         {
-                             Username = account.Username,
-                             ActivationCode = account.Activation.Code,
-                             Expiration = DateTime.MinValue
-                         };
-        
+
+        AccountActivation activation = new()
+                                       {
+                                           Username = account.Username,
+                                           ActivationCode = account.Activation.Code,
+                                           Expiration = DateTime.MinValue
+                                       };
+
         // Act
-        var result = await _sut.ActivateAsync(activation);
+        bool result = await _sut.ActivateAsync(activation);
 
         // Assert
         result.Should().BeTrue();
@@ -477,70 +477,70 @@ public class AccountServiceTests
     public async Task ResendActivationAsync_ShouldThrowValidationException_WhenAccountIsNotFound()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
-        var request = new AccountActivation()
-                      {
-                          Username = account.Username,
-                          ActivationCode = "Old and busted",
-                          Expiration = DateTime.MinValue
-                      };
+        Account account = Fakes.GenerateAccount();
+        AccountActivation request = new()
+                                    {
+                                        Username = account.Username,
+                                        ActivationCode = "Old and busted",
+                                        Expiration = DateTime.MinValue
+                                    };
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns((Account?)null);
-        
+
         // Act
-        var action = async () => await _sut.ResendActivationAsync(request);
+        Func<Task<bool>> action = async () => await _sut.ResendActivationAsync(request);
 
         // Assert
         await action.Should().ThrowAsync<ValidationException>().WithMessage("No account found");
     }
-    
+
     [Fact]
     public async Task ResendActivationAsync_ShouldThrowValidationException_WhenActivationCodeIsInvalid()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         account.Activation.Code = "Old and busted";
-        
-        var request = new AccountActivation()
-                      {
-                          Username = account.Username,
-                          ActivationCode = "New Hotness",
-                          Expiration = DateTime.MinValue
-                      };
+
+        AccountActivation request = new()
+                                    {
+                                        Username = account.Username,
+                                        ActivationCode = "New Hotness",
+                                        Expiration = DateTime.MinValue
+                                    };
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
-        
+
         // Act
-        var action = async () => await _sut.ResendActivationAsync(request);
+        Func<Task<bool>> action = async () => await _sut.ResendActivationAsync(request);
 
         // Assert
         await action.Should().ThrowAsync<ValidationException>().WithMessage("Activation code invalid");
     }
-    
+
     [Fact]
     public async Task ResendActivationAsync_ShouldReturnFalse_WhenUpdateActivationAsyncFails()
     {
         // Arrange
-        var account = Fakes.GenerateAccount();
+        Account account = Fakes.GenerateAccount();
         account.Activation.Code = "Test";
-        
-        var request = new AccountActivation()
-                      {
-                          Username = account.Username,
-                          ActivationCode = account.Activation.Code,
-                          Expiration = DateTime.MinValue
-                      };
+
+        AccountActivation request = new()
+                                    {
+                                        Username = account.Username,
+                                        ActivationCode = account.Activation.Code,
+                                        Expiration = DateTime.MinValue
+                                    };
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
         _accountRepository.UpdateActivationAsync(account.Id, Arg.Any<AccountActivation>()).Returns(false);
-        
+
         // Act
-        var result = await _sut.ResendActivationAsync(request);
+        bool result = await _sut.ResendActivationAsync(request);
 
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Fact]
     public async Task ResendActivationAsync_ShouldInsertValidInformationAndQueueEmail_WhenAccountIsCreated()
     {
@@ -551,12 +551,12 @@ public class AccountServiceTests
 
         account.Activation.Code = "Test";
 
-        var request = new AccountActivation()
-                      {
-                          Username = account.Username,
-                          ActivationCode = account.Activation.Code,
-                          Expiration = DateTime.UtcNow
-                      };
+        AccountActivation request = new()
+                                    {
+                                        Username = account.Username,
+                                        ActivationCode = account.Activation.Code,
+                                        Expiration = DateTime.UtcNow
+                                    };
 
         string testLinkFormat = $"Username: {account.Username}, Password: Test";
 
@@ -566,7 +566,7 @@ public class AccountServiceTests
         _accountRepository.UpdateActivationAsync(account.Id, Arg.Any<AccountActivation>()).Returns(true);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
         _accountRepository.GetByUsernameAsync(account.Username, Arg.Any<CancellationToken>()).Returns(account);
-        
+
         _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
         _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
         _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
@@ -590,7 +590,7 @@ public class AccountServiceTests
 
         // Assert
         result.Should().BeTrue();
-        
+
         ICall? emailCall = _emailService.ReceivedCalls().FirstOrDefault();
         emailCall.Should().NotBeNull();
 
@@ -618,13 +618,13 @@ public class AccountServiceTests
         Account serviceAccount = Fakes.GenerateAccount();
 
         account.Activation.Code = "Test";
-        
-        var request = new AccountActivation()
-                      {
-                          Username = account.Username,
-                          ActivationCode = account.Activation.Code,
-                          Expiration = DateTime.UtcNow
-                      };
+
+        AccountActivation request = new()
+                                    {
+                                        Username = account.Username,
+                                        ActivationCode = account.Activation.Code,
+                                        Expiration = DateTime.UtcNow
+                                    };
 
         _dateTimeProvider.GetUtcNow().Returns(now);
         _accountRepository.UpdateActivationAsync(account.Id, Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);

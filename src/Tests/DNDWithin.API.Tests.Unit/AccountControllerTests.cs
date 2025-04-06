@@ -330,7 +330,7 @@ public class AccountControllerTests
         _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Returns(false);
 
         // Act
-        var action = async () => await _sut.Activate(username, activationcode, CancellationToken.None);
+        Func<Task<IActionResult>>? action = async () => await _sut.Activate(username, activationcode, CancellationToken.None);
 
         // Assert
         await action.Should().ThrowAsync<Exception>("Server error has occurred, contact support");
@@ -373,7 +373,7 @@ public class AccountControllerTests
         // Assert
         await action.Should().ThrowAsync<ValidationException>("Account not found");
     }
-    
+
     [Fact]
     public async Task ResendActivation_ShouldThrowException_WhenActivationIsNotValid()
     {
@@ -389,7 +389,7 @@ public class AccountControllerTests
         // Assert
         await action.Should().ThrowAsync<ValidationException>("Activation invalid");
     }
-    
+
     [Fact]
     public async Task Activate_ShouldThrowException_WhenResendActivationFailsInDb()
     {
@@ -400,12 +400,12 @@ public class AccountControllerTests
         _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Returns(false);
 
         // Act
-        var action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
+        Func<Task<IActionResult>>? action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
 
         // Assert
         await action.Should().ThrowAsync<Exception>("Server error has occurred, contact support");
     }
-    
+
     [Fact]
     public async Task ResendActivation_ShouldReturnOk_WhenActivationIsResent()
     {
@@ -415,10 +415,10 @@ public class AccountControllerTests
 
         _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Returns(true);
 
-        var expectedResponse = new AccountActivationResponse()
-                               {
-                                   Username = username
-                               };
+        AccountActivationResponse expectedResponse = new()
+                                                     {
+                                                         Username = username
+                                                     };
 
         // Act
         OkObjectResult result = (OkObjectResult)await _sut.ResendActivation(username, activationcode, CancellationToken.None);

@@ -152,7 +152,7 @@ public class AccountService : IAccountService
             await QueueActivationEmail(account, activation, expirationMinutes, token);
         }
         catch (Exception e)
-        {   
+        {
             _logger.LogError(e.Message, e);
         }
 

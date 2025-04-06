@@ -85,7 +85,10 @@ app.UseAuthorization();
 app.UseMiddleware<ValidationMappingMiddleware>();
 app.MapControllers();
 
-DbInitializer dbInitializer = app.Services.GetRequiredService<DbInitializer>();
-await dbInitializer.InitializeAsync();
+if (app.Environment.IsDevelopment())
+{
+    DbInitializer dbInitializer = app.Services.GetRequiredService<DbInitializer>();
+    await dbInitializer.InitializeAsync();
+}
 
 app.Run();

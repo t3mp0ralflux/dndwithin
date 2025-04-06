@@ -86,7 +86,7 @@ public static class ContractMapping
                    PageSize = request.PageSize
                };
     }
-    
+
     public static AccountActivationResponse ToResponse(this AccountActivation activation)
     {
         return new AccountActivationResponse
