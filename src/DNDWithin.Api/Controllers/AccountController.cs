@@ -120,7 +120,7 @@ public class AccountController : ControllerBase
                                                   Username = username,
                                                   Expiration = DateTime.MinValue
                                               };
-        bool resendActivationResult = await _accountService.ResendActivation(activationRequest, token);
+        bool resendActivationResult = await _accountService.ResendActivationAsync(activationRequest, token);
 
         if (!resendActivationResult)
         {

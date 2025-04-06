@@ -146,14 +146,14 @@ public class AccountRepository : IAccountRepository
         return results;
     }
 
-    public async Task<int> GetCountAsync(string? userName, CancellationToken token = default)
+    public async Task<int> GetCountAsync(string? username, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
         return await connection.QuerySingleAsync<int>(new CommandDefinition("""
                                                                             select count(id)
                                                                             from account
                                                                             where (@userName is null || username like ('%' || @userName || '%'))
-                                                                            """, new { userName }, cancellationToken: token));
+                                                                            """, new { userName = username?.ToLowerInvariant() }, cancellationToken: token));
     }
 
     public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
@@ -163,15 +163,15 @@ public class AccountRepository : IAccountRepository
                                                                                                  select {AccountFields}, actv.expiration, actv.code
                                                                                                  from account acct
                                                                                                  left join accountactivation actv on acct.id = actv.account_id
-                                                                                                 where lower(email) = @email
-                                                                                                 """, new { email }, cancellationToken: token), (account, activation) =>
+                                                                                                 where lower(email) = @Email
+                                                                                                 """, new { Email = email.ToLowerInvariant() }, cancellationToken: token), (account, activation) =>
                                                                                                                                                 {
                                                                                                                                                     account.Activation = activation;
                                                                                                                                                     return account;
                                                                                                                                                 }, "expiration")).FirstOrDefault();
     }
 
-    public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
+    public async Task<Account?> GetByUsernameAsync(string username, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
         return (await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
@@ -179,11 +179,11 @@ public class AccountRepository : IAccountRepository
                                                                                                  from account acct
                                                                                                  left join accountactivation actv on acct.id = actv.account_id
                                                                                                  where lower(username) = @userName
-                                                                                                 """, new { userName }, cancellationToken: token), (account, activation) =>
-                                                                                                                                                   {
-                                                                                                                                                       account.Activation = activation;
-                                                                                                                                                       return account;
-                                                                                                                                                   }, "expiration")).FirstOrDefault();
+                                                                                                 """, new { userName = username.ToLowerInvariant() }, cancellationToken: token), (account, activation) =>
+                                                                                                                                                                                         {
+                                                                                                                                                                                             account.Activation = activation;
+                                                                                                                                                                                             return account;
+                                                                                                                                                                                         }, "expiration")).FirstOrDefault();
     }
 
     public async Task<bool> UpdateAsync(Account account, CancellationToken token = default)

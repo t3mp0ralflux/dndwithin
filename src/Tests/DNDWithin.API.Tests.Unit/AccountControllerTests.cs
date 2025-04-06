@@ -365,7 +365,7 @@ public class AccountControllerTests
         string username = "TestUsername";
         string activationcode = "Activate";
 
-        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Throws(new ValidationException("Account not found"));
+        _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Throws(new ValidationException("Account not found"));
 
         // Act
         Func<Task<IActionResult>> action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
@@ -381,7 +381,7 @@ public class AccountControllerTests
         string username = "TestUsername";
         string activationcode = "Activate";
 
-        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Throws(new ValidationException("Activation invalid"));
+        _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Throws(new ValidationException("Activation invalid"));
 
         // Act
         Func<Task<IActionResult>> action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
@@ -397,7 +397,7 @@ public class AccountControllerTests
         string username = "TestUsername";
         string activationcode = "Activate";
 
-        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Returns(false);
+        _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Returns(false);
 
         // Act
         var action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
@@ -413,7 +413,7 @@ public class AccountControllerTests
         string username = "TestUsername";
         string activationcode = "Activate";
 
-        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Returns(true);
+        _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Returns(true);
 
         var expectedResponse = new AccountActivationResponse()
                                {

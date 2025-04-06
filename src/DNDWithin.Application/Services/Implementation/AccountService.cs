@@ -69,23 +69,19 @@ public class AccountService : IAccountService
         return await _accountRepository.GetAllAsync(options, token);
     }
 
-    public async Task<int> GetCountAsync(string? userName, CancellationToken token = default)
+    public async Task<int> GetCountAsync(string? username, CancellationToken token = default)
     {
-        return await _accountRepository.GetCountAsync(userName, token);
+        return await _accountRepository.GetCountAsync(username, token);
     }
 
     public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
     {
-        string emailLowered = email.ToLowerInvariant();
-
-        return await _accountRepository.GetByEmailAsync(emailLowered, token);
+        return await _accountRepository.GetByEmailAsync(email, token);
     }
 
-    public async Task<Account?> GetByUsernameAsync(string userName, CancellationToken token = default)
+    public async Task<Account?> GetByUsernameAsync(string username, CancellationToken token = default)
     {
-        string usernameLowered = userName.ToLowerInvariant();
-
-        return await _accountRepository.GetByUsernameAsync(usernameLowered, token);
+        return await _accountRepository.GetByUsernameAsync(username, token);
     }
 
     public async Task<Account?> UpdateAsync(Account account, CancellationToken token = default)
@@ -107,7 +103,7 @@ public class AccountService : IAccountService
 
     public async Task<bool> ActivateAsync(AccountActivation activation, CancellationToken token = default)
     {
-        Account? existingAccount = await _accountRepository.GetByUsernameAsync(activation.Username.ToLowerInvariant(), token);
+        Account? existingAccount = await _accountRepository.GetByUsernameAsync(activation.Username, token);
 
         if (existingAccount is null)
         {
@@ -116,7 +112,7 @@ public class AccountService : IAccountService
 
         if (existingAccount.Activation.Code != activation.ActivationCode || existingAccount.Activation.Expiration < _dateTimeProvider.GetUtcNow())
         {
-            throw new ValidationException("Activation code invalid");
+            throw new ValidationException("Activation is invalid");
         }
 
         existingAccount.AccountStatus = AccountStatus.active;
@@ -128,7 +124,7 @@ public class AccountService : IAccountService
         return activated;
     }
 
-    public async Task<bool> ResendActivation(AccountActivation activationRequest, CancellationToken token = default)
+    public async Task<bool> ResendActivationAsync(AccountActivation activationRequest, CancellationToken token = default)
     {
         Account? account = await _accountRepository.GetByUsernameAsync(activationRequest.Username, token);
 
