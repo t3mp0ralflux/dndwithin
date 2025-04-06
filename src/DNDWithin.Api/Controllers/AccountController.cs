@@ -6,6 +6,7 @@ using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Responses.Account;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DNDWithin.Api.Controllers;
@@ -94,14 +95,15 @@ public class AccountController : ControllerBase
         AccountActivation activationRequest = new()
                                               {
                                                   ActivationCode = activationcode,
-                                                  Username = username
+                                                  Username = username,
+                                                  Expiration = DateTime.MinValue
                                               };
 
-        (bool isActive, string reason) activationResult = await _accountService.ActivateAsync(activationRequest, token);
+        var activationResult = await _accountService.ActivateAsync(activationRequest, token);
 
-        if (!activationResult.isActive)
+        if (!activationResult)
         {
-            return Unauthorized(activationResult.reason);
+            throw new Exception("Server error has occurred, contact support"); // either didn't activate or DB had error. Validations throw exception.
         }
 
         AccountActivationResponse response = activationRequest.ToResponse();
@@ -112,8 +114,21 @@ public class AccountController : ControllerBase
     [HttpPost(ApiEndpoints.Accounts.ResendActivation)]
     public async Task<IActionResult> ResendActivation([FromRoute] string username, [FromRoute] string activationCode, CancellationToken token)
     {
-        bool resendActivationResult = await _accountService.ResendActivation(username, activationCode, token);
+        AccountActivation activationRequest = new()
+                                              {
+                                                  ActivationCode = activationCode,
+                                                  Username = username,
+                                                  Expiration = DateTime.MinValue
+                                              };
+        bool resendActivationResult = await _accountService.ResendActivation(activationRequest, token);
 
-        return Ok();
+        if (!resendActivationResult)
+        {
+            throw new Exception("Server error has occurred, contact support"); // either didn't activate or DB had error. Validations throw exception.
+        }
+
+        AccountActivationResponse response = activationRequest.ToResponse();
+
+        return Ok(response);
     }
 }

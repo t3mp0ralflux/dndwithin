@@ -214,6 +214,35 @@ public class AccountControllerTests
     }
 
     [Fact]
+    public async Task Update_ShouldReturnOk_WhenAccountIsFound()
+    {
+        // Arrange
+        Account account = Fakes.GenerateAccount();
+
+        AccountUpdateRequest request = new()
+                                       {
+                                           FirstName = "New First",
+                                           LastName = "New Last",
+                                           Username = string.Empty,
+                                           Password = string.Empty,
+                                           Email = string.Empty,
+                                           AccountStatus = (ctr.AccountStatus)account.AccountStatus,
+                                           AccountRole = (ctr.AccountRole)account.AccountRole
+                                       };
+
+        AccountResponse expectedOutput = request.ToAccount(account.Id).ToResponse();
+
+        _AccountService.UpdateAsync(Arg.Any<Account>(), CancellationToken.None).Returns(account);
+
+        // Act
+        OkObjectResult result = (OkObjectResult)await _sut.Update(account.Id, request, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(200);
+        result.Value.Should().BeEquivalentTo(expectedOutput, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
+    }
+
+    [Fact]
     public async Task Delete_ShouldReturnNotFound_WhenIdIsNotFound()
     {
         // Arrange
@@ -241,5 +270,162 @@ public class AccountControllerTests
 
         // Assert
         result.StatusCode.Should().Be(204);
+    }
+
+    [Fact]
+    public async Task Activate_ShouldThrowException_WhenAccountIsNotFound()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Throws(new ValidationException("No account found"));
+
+        // Act
+        Func<Task<IActionResult>> action = async () => await _sut.Activate(username, activationcode, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<ValidationException>("No account found");
+    }
+
+    [Fact]
+    public async Task Activate_ShouldThrowException_WhenActivationIsNotValid()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Throws(new ValidationException("Activation Code has expired"));
+
+        // Act
+        Func<Task<IActionResult>> action = async () => await _sut.Activate(username, activationcode, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<ValidationException>("Activation Code has expired");
+    }
+
+    [Fact]
+    public async Task Activate_ShouldThrowException_WhenActivationFails()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Throws(new ValidationException("Couldn't activate"));
+
+        // Act
+        Func<Task<IActionResult>> action = async () => await _sut.Activate(username, activationcode, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<ValidationException>("Couldn't activate");
+    }
+
+    [Fact]
+    public async Task Activate_ShouldThrowException_WhenActivationFailsInDb()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Returns(false);
+
+        // Act
+        var action = async () => await _sut.Activate(username, activationcode, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<Exception>("Server error has occurred, contact support");
+    }
+
+    [Fact]
+    public async Task Activate_ShouldReturnOk_WhenActivationPasses()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Returns(true);
+
+        AccountActivationResponse expectedResponse = new()
+                                                     {
+                                                         Username = username
+                                                     };
+
+        // Act
+        OkObjectResult result = (OkObjectResult)await _sut.Activate(username, activationcode, CancellationToken.None);
+
+        // Assert
+        result.StatusCode.Should().Be(200);
+        result.Value.Should().BeEquivalentTo(expectedResponse);
+    }
+
+    [Fact]
+    public async Task ResendActivation_ShouldThrowException_WhenAccountIsNotFound()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Throws(new ValidationException("Account not found"));
+
+        // Act
+        Func<Task<IActionResult>> action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<ValidationException>("Account not found");
+    }
+    
+    [Fact]
+    public async Task ResendActivation_ShouldThrowException_WhenActivationIsNotValid()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Throws(new ValidationException("Activation invalid"));
+
+        // Act
+        Func<Task<IActionResult>> action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<ValidationException>("Activation invalid");
+    }
+    
+    [Fact]
+    public async Task Activate_ShouldThrowException_WhenResendActivationFailsInDb()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Returns(false);
+
+        // Act
+        var action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
+
+        // Assert
+        await action.Should().ThrowAsync<Exception>("Server error has occurred, contact support");
+    }
+    
+    [Fact]
+    public async Task ResendActivation_ShouldReturnOk_WhenActivationIsResent()
+    {
+        // Arrange
+        string username = "TestUsername";
+        string activationcode = "Activate";
+
+        _AccountService.ResendActivation(Arg.Any<AccountActivation>()).Returns(true);
+
+        var expectedResponse = new AccountActivationResponse()
+                               {
+                                   Username = username
+                               };
+
+        // Act
+        OkObjectResult result = (OkObjectResult)await _sut.ResendActivation(username, activationcode, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.StatusCode.Should().Be(200);
+        result.Value.Should().BeEquivalentTo(expectedResponse);
     }
 }

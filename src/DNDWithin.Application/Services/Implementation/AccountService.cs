@@ -105,18 +105,18 @@ public class AccountService : IAccountService
         return await _accountRepository.DeleteAsync(id, token);
     }
 
-    public async Task<(bool isActive, string reason)> ActivateAsync(AccountActivation activation, CancellationToken token = default)
+    public async Task<bool> ActivateAsync(AccountActivation activation, CancellationToken token = default)
     {
         Account? existingAccount = await _accountRepository.GetByUsernameAsync(activation.Username.ToLowerInvariant(), token);
 
         if (existingAccount is null)
         {
-            return (false, "No account found");
+            throw new ValidationException("No account found");
         }
 
         if (existingAccount.Activation.Code != activation.ActivationCode || existingAccount.Activation.Expiration < _dateTimeProvider.GetUtcNow())
         {
-            return (false, "Activation Code has expired");
+            throw new ValidationException("Activation code invalid");
         }
 
         existingAccount.AccountStatus = AccountStatus.active;
@@ -125,32 +125,42 @@ public class AccountService : IAccountService
 
         bool activated = await _accountRepository.ActivateAsync(existingAccount, token);
 
-        return !activated
-            ? (false, "Activation failed, please try again")
-            : (activated, "Activation successful");
+        return activated;
     }
 
-    public async Task<bool> ResendActivation(string username, string activationCode, CancellationToken token = default)
+    public async Task<bool> ResendActivation(AccountActivation activationRequest, CancellationToken token = default)
     {
-        Account? account = await _accountRepository.GetByUsernameAsync(username, token);
+        Account? account = await _accountRepository.GetByUsernameAsync(activationRequest.Username, token);
 
         if (account is null)
         {
-            return false;
+            throw new ValidationException("No account found");
         }
 
-        if (!string.Equals(account.Activation.Code, activationCode))
+        if (!string.Equals(account.Activation.Code, activationRequest.ActivationCode))
         {
-            throw new ValidationException("Validation link no longer valid"); // don't let them use old codes.
+            throw new ValidationException("Activation code invalid");
         }
 
         (int expirationMinutes, AccountActivation activation) = await CreateActivationData(account, token);
 
-        await _accountRepository.UpdateActivationAsync(account.Id, activation, token);
+        bool success = await _accountRepository.UpdateActivationAsync(account.Id, activation, token);
 
-        await QueueActivationEmail(account, activation, expirationMinutes, token);
+        if (!success)
+        {
+            return false;
+        }
 
-        return true;
+        try
+        {
+            await QueueActivationEmail(account, activation, expirationMinutes, token);
+        }
+        catch (Exception e)
+        {   
+            _logger.LogError(e.Message, e);
+        }
+
+        return success;
     }
 
     private async Task QueueActivationEmail(Account account, AccountActivation activation, int expirationMinutes, CancellationToken token)

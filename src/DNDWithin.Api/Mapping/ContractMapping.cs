@@ -86,16 +86,7 @@ public static class ContractMapping
                    PageSize = request.PageSize
                };
     }
-
-    public static AccountActivation ToAccountActivation(this AccountActivationRequest request)
-    {
-        return new AccountActivation
-               {
-                   Username = request.Username,
-                   ActivationCode = request.ActivationCode
-               };
-    }
-
+    
     public static AccountActivationResponse ToResponse(this AccountActivation activation)
     {
         return new AccountActivationResponse
