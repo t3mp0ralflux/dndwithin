@@ -220,7 +220,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                                                   .WhenTypeIs<DateTime>());
     }
 
-    [Theory]
+    [SkipIfEnivronmentMissingTheory]
     [InlineData(SortOrder.unordered)]
     [InlineData(SortOrder.ascending)]
     [InlineData(SortOrder.descending)]
@@ -508,7 +508,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [SkipIfEnvironmentMissingFact]
     public async Task DeleteAsync_ShouldReturnTrue_WhenAccountIsDeleted()
     {
         // Arrange
@@ -536,7 +536,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     }
 
     [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByIdAsync_ShouldReturnNull_WhenIdIsNotFound()
+    public async Task ExistsByIdAsync_ShouldReturnFalse_WhenIdIsNotFound()
     {
         // Arrange
 
@@ -544,11 +544,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         var result = await _sut.ExistsByIdAsync(Guid.NewGuid());
 
         // Assert
-        result.Should().BeNull();
+        result.Should().BeFalse();
     }
 
     [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByIdAsync_ShouldReturnAccount_WhenIdIsFound()
+    public async Task ExistsByIdAsync_ShouldReturnTrue_WhenIdIsFound()
     {
         // Arrange
         var account = Fakes.GenerateAccount();
@@ -565,11 +565,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         var result = await _sut.ExistsByIdAsync(account.Id);
 
         // Assert
-        result.Should().NotBeNull();
+        result.Should().BeTrue();
     }
     
     [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByUsernameAsync_ShouldReturnNull_WhenUsernameIsNotFound()
+    public async Task ExistsByUsernameAsync_ShouldReturnFalse_WhenUsernameIsNotFound()
     {
         // Arrange
 
@@ -577,11 +577,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         var result = await _sut.ExistsByUsernameAsync("Test");
 
         // Assert
-        result.Should().BeNull();
+        result.Should().BeFalse();
     }
 
     [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByUsernameAsync_ShouldReturnAccount_WhenUsernameIsFound()
+    public async Task ExistsByUsernameAsync_ShouldReturnTrue_WhenUsernameIsFound()
     {
         // Arrange
         var account = Fakes.GenerateAccount();
@@ -595,14 +595,14 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         await _sut.CreateAsync(account, activation);
         
         // Act
-        var result = await _sut.ExistsByUsernameAsync(account.Username);
+        var result = await _sut.ExistsByUsernameAsync(account.Username.ToLowerInvariant());
 
         // Assert
-        result.Should().NotBeNull();
+        result.Should().BeTrue();
     }
     
     [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByEmailAsync_ShouldReturnNull_WhenEmailIsNotFound()
+    public async Task ExistsByEmailAsync_ShouldReturnFalse_WhenEmailIsNotFound()
     {
         // Arrange
 
@@ -610,11 +610,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         var result = await _sut.ExistsByEmailAsync("test@test.com");
 
         // Assert
-        result.Should().BeNull();
+        result.Should().BeFalse();
     }
 
     [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByEmailAsync_ShouldReturnAccount_WhenEmailIsFound()
+    public async Task ExistsByEmailAsync_ShouldReturnTrue_WhenEmailIsFound()
     {
         // Arrange
         var account = Fakes.GenerateAccount();
@@ -628,9 +628,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         await _sut.CreateAsync(account, activation);
         
         // Act
-        var result = await _sut.ExistsByEmailAsync(account.Email!);
+        var result = await _sut.ExistsByEmailAsync(account.Email.ToLowerInvariant());
 
         // Assert
-        result.Should().NotBeNull();
+        result.Should().BeTrue();
     }
 }

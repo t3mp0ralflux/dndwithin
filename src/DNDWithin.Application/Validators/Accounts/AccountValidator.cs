@@ -26,15 +26,15 @@ public class AccountValidator : AbstractValidator<Account>
             return false;
         }
 
-        Account? userNameExists = await _accountRepository.ExistsByUsernameAsync(userName, token);
+        bool userNameExists = await _accountRepository.ExistsByUsernameAsync(userName, token);
 
-        if (userNameExists is not null)
+        if (!userNameExists)
         {
-            context.AddFailure("Username already in use");
-            return false;
+            return true;
         }
 
-        return true;
+        context.AddFailure("Username already in use");
+        return false;
     }
 
     private async Task<bool> ValidateEmail(string? email, ValidationContext<Account> context, CancellationToken token)
@@ -45,14 +45,14 @@ public class AccountValidator : AbstractValidator<Account>
             return false;
         }
 
-        Account? emailExists = await _accountRepository.ExistsByEmailAsync(email, token);
+        bool emailExists = await _accountRepository.ExistsByEmailAsync(email, token);
 
-        if (emailExists is not null)
+        if (!emailExists)
         {
-            context.AddFailure("Email already in use. Please login instead");
-            return false;
+            return true;
         }
 
-        return true;
+        context.AddFailure("Email already in use. Please login instead");
+        return false;
     }
 }

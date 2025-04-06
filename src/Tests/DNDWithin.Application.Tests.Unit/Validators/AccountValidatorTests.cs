@@ -52,7 +52,7 @@ public class AccountValidatorTests
         // Arrange
         var account = Fakes.GenerateAccount();
 
-        _accountRepository.ExistsByEmailAsync(account.Email!).Returns(account);
+        _accountRepository.ExistsByEmailAsync(account.Email!).Returns(true);
         
         // Act
         var action = async () => await _sut.ValidateAndThrowAsync(account);
@@ -74,7 +74,7 @@ public class AccountValidatorTests
         // Arrange
         var account = Fakes.GenerateAccount();
 
-        _accountRepository.ExistsByUsernameAsync(account.Username!).Returns(account);
+        _accountRepository.ExistsByUsernameAsync(account.Username!).Returns(true);
         
         // Act
         var action = async () => await _sut.ValidateAndThrowAsync(account);
@@ -95,8 +95,8 @@ public class AccountValidatorTests
     {
         // Arrange
         var account = Fakes.GenerateAccount();
-        _accountRepository.ExistsByEmailAsync(account.Email!).Returns((Account?)null);
-        _accountRepository.ExistsByUsernameAsync(account.Username!).Returns((Account?)null);
+        _accountRepository.ExistsByEmailAsync(account.Email!).Returns(false);
+        _accountRepository.ExistsByUsernameAsync(account.Username!).Returns(false);
 
         // Act
         var action = async () => await _sut.ValidateAndThrowAsync(account);

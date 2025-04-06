@@ -90,8 +90,8 @@ public class AccountService : IAccountService
 
     public async Task<Account?> UpdateAsync(Account account, CancellationToken token = default)
     {
-        Account? existingAccount = await _accountRepository.ExistsByIdAsync(account.Id, token);
-        if (existingAccount is null)
+        bool existingAccount = await _accountRepository.ExistsByIdAsync(account.Id, token);
+        if (!existingAccount)
         {
             return null;
         }

@@ -55,34 +55,40 @@ public class AccountRepository : IAccountRepository
         return result > 0;
     }
 
-    public async Task<Account?> ExistsByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<bool> ExistsByIdAsync(Guid id, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
-        Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition("""
-                                                                                                    select * from account where id = @id 
+        int result = await connection.QuerySingleOrDefaultAsync<int>(new CommandDefinition("""
+                                                                                                    select count(id) 
+                                                                                                    from account 
+                                                                                                    where id = @id 
                                                                                                     """, new { id }, cancellationToken: token));
-        return result;
+        return result > 0;
     }
 
-    public async Task<Account?> ExistsByUsernameAsync(string userName, CancellationToken token = default)
+    public async Task<bool> ExistsByUsernameAsync(string userName, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
-        Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition("""
-                                                                                                    select * from account where username = @userName 
+        int result = await connection.QuerySingleOrDefaultAsync<int>(new CommandDefinition("""
+                                                                                                    select count(id) 
+                                                                                                    from account 
+                                                                                                    where lower(username) = @userName 
                                                                                                     """, new { userName }, cancellationToken: token));
-        return result;
+        return result > 0;
     }
 
-    public async Task<Account?> ExistsByEmailAsync(string email, CancellationToken token = default)
+    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
-        Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition("""
-                                                                                                    select * from account where email = @email 
+        int result = await connection.QuerySingleOrDefaultAsync<int>(new CommandDefinition("""
+                                                                                                    select count(id) 
+                                                                                                    from account 
+                                                                                                    where lower(email) = @email 
                                                                                                     """, new { email }, cancellationToken: token));
-        return result;
+        return result > 0;
     }
 
     public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token = default)
@@ -118,7 +124,7 @@ public class AccountRepository : IAccountRepository
                                                                                                                         select {AccountFields}, actv.expiration, actv.code
                                                                                                                         from account acct
                                                                                                                         left join accountactivation actv on acct.id = actv.account_id
-                                                                                                                        where (@username is null or username like ('%' || @username || '%'))
+                                                                                                                        where (@username is null or lower(username) like ('%' || @username || '%'))
                                                                                                                         and (@accountrole is null or account_role = @accountrole)
                                                                                                                         and (@accountstatus is null or account_status = @accountstatus )
                                                                                                                         {orderClause}
@@ -126,7 +132,7 @@ public class AccountRepository : IAccountRepository
                                                                                                                         offset @pageOffset
                                                                                                                         """, new
                                                                                                                              {
-                                                                                                                                 username = options.UserName,
+                                                                                                                                 username = options.UserName?.ToLowerInvariant(),
                                                                                                                                  accountrole = options.AccountRole,
                                                                                                                                  accountstatus = options.AccountStatus,
                                                                                                                                  pageSize = options.PageSize,
