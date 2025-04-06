@@ -14,20 +14,20 @@ public class EmailService : IEmailService
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task QueueEmail(EmailData emailData, CancellationToken token = default)
+    public async Task QueueEmailAsync(EmailData emailData, CancellationToken token = default)
     {
         emailData.ResponseLog += $"{_dateTimeProvider.GetUtcNow()}: Email Queued;";
 
-        await _emailRepository.QueueEmail(emailData, token);
+        await _emailRepository.QueueEmailAsync(emailData, token);
     }
 
-    public async Task<List<EmailData>> GetForProcessing(int batchSize, CancellationToken token = default)
+    public async Task<List<EmailData>> GetForProcessingAsync(int batchSize, CancellationToken token = default)
     {
-        return await _emailRepository.GetForProcessing(batchSize, token);
+        return await _emailRepository.GetForProcessingAsync(batchSize, token);
     }
 
-    public async Task<bool> Update(EmailData emailData, CancellationToken token = default)
+    public async Task<bool> UpdateAsync(EmailData emailData, CancellationToken token = default)
     {
-        return await _emailRepository.Update(emailData, token);
+        return await _emailRepository.UpdateAsync(emailData, token);
     }
 }

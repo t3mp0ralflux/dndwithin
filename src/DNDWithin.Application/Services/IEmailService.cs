@@ -4,7 +4,7 @@ namespace DNDWithin.Application.Services;
 
 public interface IEmailService
 {
-    Task QueueEmail(EmailData emailData, CancellationToken token = default);
-    Task<List<EmailData>> GetForProcessing(int batchSize, CancellationToken token = default);
-    Task<bool> Update(EmailData emailData, CancellationToken token = default);
+    Task QueueEmailAsync(EmailData emailData, CancellationToken token = default);
+    Task<List<EmailData>> GetForProcessingAsync(int batchSize, CancellationToken token = default);
+    Task<bool> UpdateAsync(EmailData emailData, CancellationToken token = default);
 }

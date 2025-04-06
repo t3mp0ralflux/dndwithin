@@ -181,7 +181,7 @@ public class AccountService : IAccountService
                              ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created;"
                          };
 
-        _emailService.QueueEmail(data, token); // fire and forget, no waiting.
+        _emailService.QueueEmailAsync(data, token); // fire and forget, no waiting.
     }
 
     private async Task<(int expirationMinutes, AccountActivation activation)> CreateActivationData(Account account, CancellationToken token)

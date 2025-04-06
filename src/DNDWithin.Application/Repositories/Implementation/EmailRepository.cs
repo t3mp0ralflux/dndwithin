@@ -17,7 +17,7 @@ public class EmailRepository : IEmailRepository
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<bool> QueueEmail(EmailData emailData, CancellationToken token = default)
+    public async Task<bool> QueueEmailAsync(EmailData emailData, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         using IDbTransaction transaction = connection.BeginTransaction();
@@ -32,7 +32,7 @@ public class EmailRepository : IEmailRepository
         return result > 0;
     }
 
-    public async Task<List<EmailData>> GetForProcessing(int batchSize, CancellationToken token = default)
+    public async Task<List<EmailData>> GetForProcessingAsync(int batchSize, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnectionFactory.CreateConnectionAsync(token);
 
@@ -47,7 +47,7 @@ public class EmailRepository : IEmailRepository
         return result.ToList();
     }
 
-    public async Task<bool> Update(EmailData emailData, CancellationToken token = default)
+    public async Task<bool> UpdateAsync(EmailData emailData, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnectionFactory.CreateConnectionAsync(token);
         using IDbTransaction transaction = connection.BeginTransaction();

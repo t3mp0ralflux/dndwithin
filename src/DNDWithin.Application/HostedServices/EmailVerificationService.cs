@@ -58,7 +58,7 @@ public class EmailVerificationService : IHostedService
 
         int maxEmailsToSend = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.EMAIL_SEND_BATCH_LIMIT, 100, token);
 
-        List<EmailData> emailsToProcess = await _emailService.GetForProcessing(maxEmailsToSend, token);
+        List<EmailData> emailsToProcess = await _emailService.GetForProcessingAsync(maxEmailsToSend, token);
 
         if (emailsToProcess.Count == 0)
         {
@@ -77,13 +77,13 @@ public class EmailVerificationService : IHostedService
                 emailData.ShouldSend = false;
                 emailData.ResponseLog += $"{_dateTimeProvider}: Max email attempts reached";
 
-                await _emailService.Update(emailData, token);
+                await _emailService.UpdateAsync(emailData, token);
                 continue;
             }
 
             emailData.ShouldSend = false; // hit early to avoid spamming on DB write errors.
 
-            await _emailService.Update(emailData, token);
+            await _emailService.UpdateAsync(emailData, token);
 
             (bool success, string message) = await SendEmailAsync(emailData, token);
 
@@ -93,13 +93,13 @@ public class EmailVerificationService : IHostedService
                 emailData.ShouldSend = false;
                 emailData.SentUtc = _dateTimeProvider.GetUtcNow();
 
-                await _emailService.Update(emailData, token);
+                await _emailService.UpdateAsync(emailData, token);
                 continue;
             }
 
             emailData.ShouldSend = true;
             emailData.ResponseLog += $"{_dateTimeProvider.GetUtcNow()}: Email failed to send. Attempt {emailData.SendAttempts} out of {maxAttempts}. Error {message};";
-            await _emailService.Update(emailData, token);
+            await _emailService.UpdateAsync(emailData, token);
         }
     }
 

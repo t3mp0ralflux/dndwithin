@@ -36,7 +36,7 @@ public class GlobalSettingsService : IGlobalSettingsService
         return await _globalSettingsRepository.GetCountAsync(name, token);
     }
 
-    public async Task<GlobalSetting?> GetSettingAsync(string name, bool defaultValue, CancellationToken token = default)
+    public async Task<GlobalSetting?> GetSettingAsync(string name, CancellationToken token = default)
     {
         GlobalSetting? setting = await _globalSettingsRepository.GetSetting(name, token);
 
@@ -54,14 +54,6 @@ public class GlobalSettingsService : IGlobalSettingsService
 
         try
         {
-            // Type? type = Nullable.GetUnderlyingType(typeof(T));
-            // if (type is null)
-            // {
-            //     return defaultValue;
-            // }
-            //
-            // return (T)Convert.ChangeType(setting.Name, type);
-
             return (T)Convert.ChangeType(setting.Value, typeof(T));
         }
         catch (Exception ex)

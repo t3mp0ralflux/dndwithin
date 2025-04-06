@@ -32,7 +32,7 @@ public class GlobalSettingController : ControllerBase
     [HttpGet(ApiEndpoints.GlobalSettings.Get)]
     public async Task<IActionResult> Get([FromRoute] string name, CancellationToken token)
     {
-        GlobalSetting? setting = await _globalSettingsService.GetSettingAsync(name, false, token);
+        GlobalSetting? setting = await _globalSettingsService.GetSettingAsync(name, token);
 
         return Ok(setting);
     }

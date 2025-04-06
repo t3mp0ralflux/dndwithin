@@ -131,7 +131,7 @@ public class AccountServiceTests
         _dateTimeProvider.GetUtcNow().Returns(now);
         _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
-        _emailService.QueueEmail(Arg.Any<EmailData>()).Throws(new TimeoutException("Db Timeout"));
+        _emailService.QueueEmailAsync(Arg.Any<EmailData>()).Throws(new TimeoutException("Db Timeout"));
 
         // Act
         bool result = await _sut.CreateAsync(account.Clone());
@@ -630,7 +630,7 @@ public class AccountServiceTests
         _accountRepository.UpdateActivationAsync(account.Id, Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
         _accountRepository.GetByUsernameAsync(account.Username, Arg.Any<CancellationToken>()).Returns(account);
-        _emailService.QueueEmail(Arg.Any<EmailData>()).Throws(new TimeoutException("Db Timeout"));
+        _emailService.QueueEmailAsync(Arg.Any<EmailData>()).Throws(new TimeoutException("Db Timeout"));
 
         // Act
         bool result = await _sut.ResendActivationAsync(request); // TODO: WRONG

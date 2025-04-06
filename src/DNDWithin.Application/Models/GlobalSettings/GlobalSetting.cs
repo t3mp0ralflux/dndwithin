@@ -2,7 +2,7 @@
 
 public class GlobalSetting
 {
-    public Guid Id { get; init; }
-    public string Name { get; set; }
-    public string Value { get; set; }
+    public required Guid Id { get; init; }
+    public required string Name { get; set; }
+    public required string Value { get; set; }
 }

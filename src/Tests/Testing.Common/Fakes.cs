@@ -1,5 +1,7 @@
 ﻿using Bogus;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.GlobalSettings;
+using DNDWithin.Application.Models.System;
 
 namespace Testing.Common;
 
@@ -22,5 +24,32 @@ public static class Fakes
                                      .RuleFor(x => x.DeletedUtc, f => isDeleted ? DateTime.UtcNow : null);
 
         return fakeAccount;
+    }
+
+    public static EmailData GenerateEmailData(DateTime? sendAfterUtc = null)
+    {
+        Faker<EmailData>? fakeSetting = new Faker<EmailData>()
+                                        .RuleFor(x => x.Id, _ => Guid.NewGuid())
+                                        .RuleFor(x=>x.ShouldSend, _ => true)
+                                        .RuleFor(x=>x.SendAttempts, f=> 0)
+                                        .RuleFor(x=>x.SendAfterUtc, f=> (sendAfterUtc ??= f.Date.Recent() ))
+                                        .RuleFor(x=> x.SenderEmail, f=> f.Person.Email)
+                                        .RuleFor(x=> x.RecipientEmail, f=> f.Person.Email)
+                                        .RuleFor(x=>x.SenderAccountId, _=>Guid.NewGuid())
+                                        .RuleFor(x=>x.ReceiverAccountId, _=>Guid.NewGuid())
+                                        .RuleFor(x=>x.ResponseLog, f=>f.System.FileType())
+                                        .RuleFor(x=>x.Body, f=> f.Internet.ExampleEmail());
+
+            return fakeSetting;
+    }
+
+    public static GlobalSetting GenerateGlobalSetting(string? value = null)
+    {
+        Faker<GlobalSetting>? fakeSetting = new Faker<GlobalSetting>()
+                                            .RuleFor(x => x.Id, _ => Guid.NewGuid())
+                                            .RuleFor(x => x.Name, f => f.Commerce.ProductName())
+                                            .RuleFor(x => x.Value, f => value ??= f.Hacker.Noun());
+        
+        return fakeSetting;
     }
 }
