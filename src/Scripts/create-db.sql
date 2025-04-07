@@ -23,6 +23,23 @@ create table if not exists accountactivation(
     UNIQUE(account_id)
 );
 
+create table if not exists character(
+    id UUID primary key,
+    account_id UUID references account(id),
+    name varchar(100) not null,
+    gender varchar(25) not null,
+    age int not null,
+    hair varchar(100) not null,
+    eyes varchar(100) not null,
+    skin varchar(100) not null,
+    height varchar(100) not null,
+    weight varchar(100) not null,
+    created_utc timestamp not null,
+    updated_utc timestamp not null,
+    deleted_utc timestamp null,
+    UNIQUE(account_id, name)
+);
+
 create table if not exists email(
     id UUID primary key,
     account_id_sender UUID references account(id),
