@@ -159,7 +159,7 @@ public class AccountService : IAccountService
         return success;
     }
 
-    private async Task QueueActivationEmail(Account account, AccountActivation activation, int expirationMinutes, CancellationToken token)
+    private async Task QueueActivationEmail(Account account, AccountActivation activation, int expirationMinutes, CancellationToken token = default)
     {
         string? linkFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty, token);
         string? emailFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty, token);
