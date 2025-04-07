@@ -1,12 +1,10 @@
-﻿using DNDWithin.Application.Models.Characters;
-
-namespace DNDWithin.Application.Models;
+﻿namespace DNDWithin.Application.Models.Characters;
 
 public class Character
 {
-    public required Guid Id { get; set; }
-    public required Guid AccountId { get; set; }
-    public required string Username { get; set; }
+    public required Guid Id { get; init; }
+    public required Guid AccountId { get; init; }
+    public required string Username { get; init; }
     public required string Name { get; set; }
     public Characteristics Characteristics { get; set; } = new();
 }

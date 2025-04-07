@@ -33,8 +33,16 @@ public class CharacterController: ControllerBase
         {
             return Unauthorized();
         }
+        
+        Character character = new Character()
+                              {
+                                  Id = Guid.NewGuid(),
+                                  AccountId = account.Id,
+                                  Username = account.Username,
+                                  Name = $"{account.Username}'s Unnamed Character"
+                              };
 
-        Character character = await _characterService.CreateAsync(account, token);
+        await _characterService.CreateAsync(character, token);
 
         CharacterResponse response = character.ToResponse();
 
@@ -51,7 +59,7 @@ public class CharacterController: ControllerBase
             return Unauthorized();
         }
 
-        Character? character = await _characterService.GetAsync(account.Id, id, token);
+        Character? character = await _characterService.GetAsync(id, token);
 
         if (character is null)
         {
@@ -117,7 +125,7 @@ public class CharacterController: ControllerBase
             return Unauthorized();
         }
 
-        bool result = await _characterService.DeleteAsync(account.Id, id, token);
+        bool result = await _characterService.DeleteAsync(id, token);
 
         if (!result)
         {

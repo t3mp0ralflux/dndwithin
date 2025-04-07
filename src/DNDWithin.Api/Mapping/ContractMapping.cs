@@ -162,7 +162,7 @@ public static class ContractMapping
     {
         return new GetAllCharactersOptions()
                {
-                   Id = accountId,
+                   AccountId = accountId,
                    Name = request.Name,
                    Class = request.Class,
                    Level = request.Level,
