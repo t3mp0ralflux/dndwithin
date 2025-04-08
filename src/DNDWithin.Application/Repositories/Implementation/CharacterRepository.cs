@@ -61,7 +61,7 @@ public class CharacterRepository : ICharacterRepository
                                                                                                                                  select c.id, c.account_id as AccountId, c.username, c.name, c.created_utc as CreatedUtc, c.updated_utc as UpdatedUtc, c.deleted_utc as DeletedUtc, 
                                                                                                                                  ch.Gender, ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight
                                                                                                                                  from character c left join characteristics ch on c.id = ch.character_id
-                                                                                                                                 where c.id = @id
+                                                                                                                                 where c.id = @id and deleted_utc is null
                                                                                                                                  """, new { id }, cancellationToken: token), (character, characteristics) =>
                                                                                                                                                                           {
                                                                                                                                                                               character.Characteristics = characteristics;
@@ -145,7 +145,7 @@ public class CharacterRepository : ICharacterRepository
                                                                          update character
                                                                          set name = @Name
                                                                          where id = @Id
-                                                                         and deleted_utc is not null
+                                                                         and deleted_utc is null
                                                                          """, new
                                                                               {
                                                                                   character.Name, 
@@ -160,7 +160,13 @@ public class CharacterRepository : ICharacterRepository
                                                                 where character_id = @Id
                                                                 """, new
                                                                      {
-                                                                         character.Characteristics,
+                                                                         character.Characteristics.Gender,
+                                                                         character.Characteristics.Age,
+                                                                         character.Characteristics.Hair,
+                                                                         character.Characteristics.Eyes,
+                                                                         character.Characteristics.Skin,
+                                                                         character.Characteristics.Height,
+                                                                         character.Characteristics.Weight,
                                                                          character.Id
                                                                      }, cancellationToken: token));
         }

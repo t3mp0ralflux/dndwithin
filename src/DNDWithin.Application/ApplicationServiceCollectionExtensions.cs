@@ -18,6 +18,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<IAccountRepository, AccountRepository>();
         services.AddSingleton<IGlobalSettingsRepository, GlobalSettingsRepository>();
         services.AddSingleton<IEmailRepository, EmailRepository>();
+        services.AddSingleton<ICharacterRepository, CharacterRepository>();
 
         #endregion
 
@@ -26,6 +27,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<IAccountService, AccountService>();
         services.AddSingleton<IGlobalSettingsService, GlobalSettingsService>();
         services.AddSingleton<IEmailService, EmailService>();
+        services.AddSingleton<ICharacterService, CharacterService>();
 
         #endregion
 

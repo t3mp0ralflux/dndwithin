@@ -1,6 +1,5 @@
 ﻿using DNDWithin.Api.Auth;
 using DNDWithin.Api.Mapping;
-using DNDWithin.Application.Models;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Models.Characters;
 using DNDWithin.Application.Services;
@@ -13,7 +12,7 @@ namespace DNDWithin.Api.Controllers;
 
 [ApiController]
 [Authorize]
-public class CharacterController: ControllerBase
+public class CharacterController : ControllerBase
 {
     private readonly IAccountService _accountService;
     private readonly ICharacterService _characterService;
@@ -28,13 +27,13 @@ public class CharacterController: ControllerBase
     public async Task<IActionResult> Create(CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
-        
+
         if (account is null)
         {
             return Unauthorized();
         }
-        
-        Character character = new Character()
+
+        Character character = new()
                               {
                                   Id = Guid.NewGuid(),
                                   AccountId = account.Id,
@@ -50,7 +49,7 @@ public class CharacterController: ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Characters.Get)]
-    public async Task<IActionResult> Get(Guid id, CancellationToken token)
+    public async Task<IActionResult> Get([FromRoute]Guid id, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
 
@@ -72,7 +71,7 @@ public class CharacterController: ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Characters.GetAll)]
-    public async Task<IActionResult> GetAll(GetAllCharactersRequest request, CancellationToken token)
+    public async Task<IActionResult> GetAll([FromQuery]GetAllCharactersRequest request, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
 
@@ -84,15 +83,15 @@ public class CharacterController: ControllerBase
         GetAllCharactersOptions options = request.ToOptions(account.Id);
 
         IEnumerable<Character> characters = await _characterService.GetAllAsync(options, token);
-        var characterCount = await _characterService.GetCountAsync(options, token);
+        int characterCount = await _characterService.GetCountAsync(options, token);
 
-        CharactersResponse response = characters.ToGetAllResponse(request.Page, request.PageSize, characterCount); 
+        CharactersResponse response = characters.ToGetAllResponse(request.Page, request.PageSize, characterCount);
 
         return Ok(response);
     }
 
     [HttpPut(ApiEndpoints.Characters.Update)]
-    public async Task<IActionResult> Update(CharacterUpdateRequest request, CancellationToken token)
+    public async Task<IActionResult> Update([FromBody]CharacterUpdateRequest request, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
 
@@ -101,7 +100,7 @@ public class CharacterController: ControllerBase
             return Unauthorized();
         }
 
-        var character = request.ToCharacter(account);
+        Character character = request.ToCharacter(account);
 
         bool result = await _characterService.UpdateAsync(character, token);
 
@@ -110,13 +109,13 @@ public class CharacterController: ControllerBase
             return NotFound();
         }
 
-        var response = character.ToResponse();
+        CharacterResponse response = character.ToResponse();
 
         return Ok(response);
     }
 
     [HttpDelete(ApiEndpoints.Characters.Delete)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken token)
+    public async Task<IActionResult> Delete([FromRoute]Guid id, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
 

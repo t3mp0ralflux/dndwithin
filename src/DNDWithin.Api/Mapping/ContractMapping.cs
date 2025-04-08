@@ -154,7 +154,8 @@ public static class ContractMapping
                    Height = character.Characteristics.Height,
                    Name = character.Name,
                    Skin = character.Characteristics.Skin,
-                   Username = character.Username
+                   Username = character.Username,
+                   Weight = character.Characteristics.Weight
                };
     }
 

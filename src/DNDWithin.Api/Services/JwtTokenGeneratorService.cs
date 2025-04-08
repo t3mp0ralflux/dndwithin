@@ -38,8 +38,8 @@ public class JwtTokenGeneratorService : IJwtTokenGeneratorService
         List<Claim> claims =
         [
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Sub, request.Email),
-            new(JwtRegisteredClaimNames.Email, request.Email),
+            new(JwtRegisteredClaimNames.Sub, account.Email),
+            new(JwtRegisteredClaimNames.Email, account.Email),
             new(AuthConstants.AdminUserClaimName, (account.AccountRole == AccountRole.admin).ToString().ToLower()),
             new(AuthConstants.TrustedUserClaimName, (account.AccountRole is AccountRole.admin or AccountRole.trusted).ToString().ToLower())
         ];
