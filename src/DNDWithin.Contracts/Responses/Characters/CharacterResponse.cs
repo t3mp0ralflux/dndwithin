@@ -6,11 +6,12 @@ public class CharacterResponse
     public required Guid AccountId { get; set; }
     public required string Username { get; set; }
     public required string Name { get; set; }
-    public string Gender { get; set; }
-    public string Age { get; set; }
-    public string Hair { get; set; }
-    public string Eyes { get; set; }
-    public string Skin { get; set; }
-    public string Height { get; set; }
-    public string Weight { get; set; }
+    public required string Gender { get; set; }
+    public required string Age { get; set; }
+    public required string Hair { get; set; }
+    public required string Eyes { get; set; }
+    public required string Skin { get; set; }
+    public required string Height { get; set; }
+    public required string Weight { get; set; }
+    public required string Faith { get; set; }
 }

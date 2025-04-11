@@ -2,11 +2,12 @@
 
 public class Characteristics
 {
-    public string Gender { get; set; }
-    public string Age { get; set; }
-    public string Hair { get; set; }
-    public string Eyes { get; set; }
-    public string Skin { get; set; }
-    public string Height { get; set; }
-    public string Weight { get; set; }
+    public string Gender { get; init; }
+    public string Age { get; init; }
+    public string Hair { get; init; }
+    public string Eyes { get; init; }
+    public string Skin { get; init; }
+    public string Height { get; init; }
+    public string Weight { get; init; }
+    public string Faith { get; init; }
 }

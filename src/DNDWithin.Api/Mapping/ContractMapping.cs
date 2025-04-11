@@ -119,7 +119,8 @@ public static class ContractMapping
                                          Hair = request.Hair,
                                          Height = request.Height,
                                          Skin = request.Height,
-                                         Weight = request.Weight
+                                         Weight = request.Weight,
+                                         Faith = request.Faith
                                      }
                };
     }
@@ -155,7 +156,8 @@ public static class ContractMapping
                    Name = character.Name,
                    Skin = character.Characteristics.Skin,
                    Username = character.Username,
-                   Weight = character.Characteristics.Weight
+                   Weight = character.Characteristics.Weight,
+                   Faith = character.Characteristics.Faith
                };
     }
 

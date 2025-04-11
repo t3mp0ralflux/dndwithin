@@ -11,4 +11,5 @@ public class CharacterUpdateRequest
     public required string Skin { get; init; }
     public required string Height { get; init; }
     public required string Weight { get; init; }
+    public required string Faith { get; set; }
 }

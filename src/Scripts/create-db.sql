@@ -44,6 +44,7 @@ create table if not exists characteristics(
     skin varchar(100) not null,
     height varchar(100) not null,
     weight varchar(100) not null,
+    faith varchar(100) not null,
     UNIQUE(character_id)
 );
 

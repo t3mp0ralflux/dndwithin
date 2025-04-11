@@ -39,8 +39,8 @@ public class CharacterRepository : ICharacterRepository
         if (result > 0)
         {
             await connection.ExecuteAsync(new CommandDefinition("""
-                                                                insert into characteristics(id, character_id, gender, age, hair, eyes, skin, height, weight)
-                                                                values (@Id, @CharacterId, '', '','','','','','')
+                                                                insert into characteristics(id, character_id, gender, age, hair, eyes, skin, height, weight, faith)
+                                                                values (@Id, @CharacterId, '', '','','','','','','')
                                                                 """, new
                                                                      {
                                                                          Id = Guid.NewGuid(),
@@ -59,7 +59,7 @@ public class CharacterRepository : ICharacterRepository
 
         IEnumerable<Character> result = await connection.QueryAsync<Character, Characteristics, Character>(new CommandDefinition("""
                                                                                                                                  select c.id, c.account_id as AccountId, c.username, c.name, c.created_utc as CreatedUtc, c.updated_utc as UpdatedUtc, c.deleted_utc as DeletedUtc, 
-                                                                                                                                 ch.Gender, ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight
+                                                                                                                                 ch.Gender, ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight, ch.faith
                                                                                                                                  from character c left join characteristics ch on c.id = ch.character_id
                                                                                                                                  where c.id = @id and deleted_utc is null
                                                                                                                                  """, new { id }, cancellationToken: token), (character, characteristics) =>
@@ -84,7 +84,7 @@ public class CharacterRepository : ICharacterRepository
 
         IEnumerable<Character> results = await connection.QueryAsync<Character, Characteristics, Character>(new CommandDefinition($"""
                                                                                                                                    select c.id, c.account_id as AccountId, c.username, c.name, c.created_utc as CreatedUtc, c.updated_utc as UpdatedUtc, c.deleted_utc as DeletedUtc, 
-                                                                                                                                  ch.Gender, ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight
+                                                                                                                                  ch.Gender, ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight, ch.faith
                                                                                                                                   from character c left join characteristics ch on c.id = ch.character_id
                                                                                                                                   where c.account_id = @AccountId
                                                                                                                                   and (@Name is null or lower(c.name) like ('%' || @Name || '%'))
@@ -156,7 +156,7 @@ public class CharacterRepository : ICharacterRepository
         {
             await connection.ExecuteAsync(new CommandDefinition("""
                                                                 update characteristics
-                                                                set gender = @Gender, age = @Age, hair = @Hair, eyes = @Eyes, skin = @Skin, height = @Height, weight = @Weight
+                                                                set gender = @Gender, age = @Age, hair = @Hair, eyes = @Eyes, skin = @Skin, height = @Height, weight = @Weight, faith = @Faith
                                                                 where character_id = @Id
                                                                 """, new
                                                                      {
@@ -167,6 +167,7 @@ public class CharacterRepository : ICharacterRepository
                                                                          character.Characteristics.Skin,
                                                                          character.Characteristics.Height,
                                                                          character.Characteristics.Weight,
+                                                                         character.Characteristics.Faith,
                                                                          character.Id
                                                                      }, cancellationToken: token));
         }
