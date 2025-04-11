@@ -93,6 +93,8 @@ public static class Fakes
                                           .RuleFor(x=>x.AccountId, _ => account.Id)
                                           .RuleFor(x=>x.Username, _ => account.Username)
                                           .RuleFor(x=>x.Name, f => f.Person.FullName)
+                                          .RuleFor(x=>x.CreatedUtc, _=>DateTime.UtcNow)
+                                          .RuleFor(x=>x.UpdatedUtc, _=>DateTime.UtcNow)
                                           .RuleFor(x=>x.Characteristics, _ => characteristicsFaker.Generate(1).First());
 
         return fakeCharacter;

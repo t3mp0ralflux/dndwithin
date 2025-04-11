@@ -109,7 +109,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
 
-    [SkipIfEnivronmentMissingTheory]
+    [SkipIfEnvironmentMissingTheory]
     [InlineData(AccountStatus.banned, null, null)]
     [InlineData(null, AccountRole.standard, null)]
     [InlineData(null, null, "Bingus")]
@@ -178,14 +178,14 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                                                   .WhenTypeIs<DateTime>());
     }
 
-    [SkipIfEnivronmentMissingTheory]
+    [SkipIfEnvironmentMissingTheory]
     [InlineData(SortOrder.unordered)]
     [InlineData(SortOrder.ascending)]
     [InlineData(SortOrder.descending)]
     public async Task GetAllAsync_ShouldReturnSortedList_WhenItemsAreFound(SortOrder sortOrder)
     {
         // Arrange
-        List<Account> accounts = Enumerable.Range(5, 10).Select(x => Fakes.GenerateAccount()).ToList();
+        List<Account> accounts = Enumerable.Range(5, 10).Select(_ => Fakes.GenerateAccount()).ToList();
         foreach (Account account in accounts)
         {
             await _sut.CreateAsync(account);
@@ -203,11 +203,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         IEnumerable<Account> dbResult = await _sut.GetAllAsync(options);
         List<Account> results = dbResult.ToList();
 
+        //Assert
         results.Should().NotBeEmpty();
 
         switch (sortOrder)
         {
-            // Assert
             case SortOrder.ascending:
                 results.Should().BeInAscendingOrder(x => x.Username, StringComparer.CurrentCulture);
                 break;

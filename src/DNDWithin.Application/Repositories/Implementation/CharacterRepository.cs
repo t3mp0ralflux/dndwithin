@@ -40,11 +40,19 @@ public class CharacterRepository : ICharacterRepository
         {
             await connection.ExecuteAsync(new CommandDefinition("""
                                                                 insert into characteristics(id, character_id, gender, age, hair, eyes, skin, height, weight, faith)
-                                                                values (@Id, @CharacterId, '', '','','','','','','')
+                                                                values (@Id, @CharacterId, @Gender, @Age, @Hair, @Eyes, @Skin, @Height, @Weight, @Faith)
                                                                 """, new
                                                                      {
                                                                          Id = Guid.NewGuid(),
                                                                          CharacterId = character.Id,
+                                                                         character.Characteristics.Gender,
+                                                                         character.Characteristics.Age,
+                                                                         character.Characteristics.Hair,
+                                                                         character.Characteristics.Eyes,
+                                                                         character.Characteristics.Skin,
+                                                                         character.Characteristics.Height,
+                                                                         character.Characteristics.Weight,
+                                                                         character.Characteristics.Faith
                                                                      }, cancellationToken: token));
         }
         
@@ -53,15 +61,18 @@ public class CharacterRepository : ICharacterRepository
         return result > 0;
     }
 
-    public async Task<Character?> GetByIdAsync(Guid id, CancellationToken token = default)
+    public async Task<Character?> GetByIdAsync(Guid id, bool includeDeleted = false, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnectionFactory.CreateConnectionAsync(token);
 
-        IEnumerable<Character> result = await connection.QueryAsync<Character, Characteristics, Character>(new CommandDefinition("""
+        var shouldIncludeDeleted = includeDeleted ? string.Empty : "and deleted_utc is null";
+
+        IEnumerable<Character> result = await connection.QueryAsync<Character, Characteristics, Character>(new CommandDefinition($"""
                                                                                                                                  select c.id, c.account_id as AccountId, c.username, c.name, c.created_utc as CreatedUtc, c.updated_utc as UpdatedUtc, c.deleted_utc as DeletedUtc, 
                                                                                                                                  ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight, ch.faith
                                                                                                                                  from character c left join characteristics ch on c.id = ch.character_id
-                                                                                                                                 where c.id = @id and deleted_utc is null
+                                                                                                                                 where c.id = @id
+                                                                                                                                 {shouldIncludeDeleted}
                                                                                                                                  """, new { id }, cancellationToken: token), (character, characteristics) =>
                                                                                                                                                                           {
                                                                                                                                                                               character.Characteristics = characteristics;
@@ -116,7 +127,7 @@ public class CharacterRepository : ICharacterRepository
                                                                                   """, new
                                                                                        {
                                                                                            options.AccountId,
-                                                                                           options.Name
+                                                                                           Name = options.Name?.ToLowerInvariant()
                                                                                        }, cancellationToken: token));
 
         return result;
@@ -143,13 +154,14 @@ public class CharacterRepository : ICharacterRepository
         // note: don't update the dead
         int result = await connection.ExecuteAsync(new CommandDefinition("""
                                                                          update character
-                                                                         set name = @Name
+                                                                         set name = @Name, updated_utc = @UpdatedUtc
                                                                          where id = @Id
                                                                          and deleted_utc is null
                                                                          """, new
                                                                               {
-                                                                                  character.Name, 
-                                                                                  character.Id
+                                                                                  character.Name,
+                                                                                  character.Id,
+                                                                                  character.UpdatedUtc
                                                                               }, cancellationToken: token));
 
         if (result > 0)

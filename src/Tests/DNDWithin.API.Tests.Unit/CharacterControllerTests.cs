@@ -3,6 +3,7 @@ using DNDWithin.Api.Mapping;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Models.Characters;
 using DNDWithin.Application.Services;
+using DNDWithin.Application.Services.Implementation;
 using DNDWithin.Contracts.Requests.Characters;
 using DNDWithin.Contracts.Responses.Characters;
 using FluentAssertions;
@@ -16,12 +17,13 @@ public class CharacterControllerTests
 {
     private readonly IAccountService _accountService = Substitute.For<IAccountService>();
     private readonly ICharacterService _characterService = Substitute.For<ICharacterService>();
+    private readonly IDateTimeProvider _dateTimeProvider = Substitute.For<IDateTimeProvider>();
 
     public CharacterController _sut;
 
     public CharacterControllerTests()
     {
-        _sut = new CharacterController(_accountService, _characterService);
+        _sut = new CharacterController(_accountService, _characterService, _dateTimeProvider);
     }
 
     [Fact]

@@ -31,7 +31,7 @@ public class CharacterService : ICharacterService
 
     public async Task<Character?> GetAsync(Guid id, CancellationToken token = default)
     {
-        Character? result = await _characterRepository.GetByIdAsync(id, token);
+        Character? result = await _characterRepository.GetByIdAsync(id, token: token);
 
         return result;
     }

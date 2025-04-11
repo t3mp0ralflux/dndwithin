@@ -3,6 +3,7 @@ using DNDWithin.Api.Mapping;
 using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Models.Characters;
 using DNDWithin.Application.Services;
+using DNDWithin.Application.Services.Implementation;
 using DNDWithin.Contracts.Requests.Characters;
 using DNDWithin.Contracts.Responses.Characters;
 using Microsoft.AspNetCore.Authorization;
@@ -16,11 +17,13 @@ public class CharacterController : ControllerBase
 {
     private readonly IAccountService _accountService;
     private readonly ICharacterService _characterService;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CharacterController(IAccountService accountService, ICharacterService characterService)
+    public CharacterController(IAccountService accountService, ICharacterService characterService, IDateTimeProvider dateTimeProvider)
     {
         _accountService = accountService;
         _characterService = characterService;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     [HttpPost(ApiEndpoints.Characters.Create)]
@@ -38,7 +41,9 @@ public class CharacterController : ControllerBase
                                   Id = Guid.NewGuid(),
                                   AccountId = account.Id,
                                   Username = account.Username,
-                                  Name = $"{account.Username}'s Unnamed Character"
+                                  Name = $"{account.Username}'s Unnamed Character",
+                                  CreatedUtc = _dateTimeProvider.GetUtcNow(),
+                                  UpdatedUtc = _dateTimeProvider.GetUtcNow()
                               };
 
         await _characterService.CreateAsync(character, token);
