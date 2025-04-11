@@ -1,6 +1,7 @@
 ﻿using DNDWithin.Application.Models.GlobalSettings;
 using DNDWithin.Application.Repositories;
 using FluentValidation;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DNDWithin.Application.Services.Implementation;
 
@@ -9,12 +10,16 @@ public class GlobalSettingsService : IGlobalSettingsService
     private readonly IGlobalSettingsRepository _globalSettingsRepository;
     private readonly IValidator<GlobalSetting> _globalSettingValidator;
     private readonly IValidator<GetAllGlobalSettingsOptions> _optionsValidator;
+    private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IMemoryCache _cache;
 
-    public GlobalSettingsService(IGlobalSettingsRepository globalSettingsRepository, IValidator<GlobalSetting> globalSettingValidator, IValidator<GetAllGlobalSettingsOptions> optionsValidator)
+    public GlobalSettingsService(IGlobalSettingsRepository globalSettingsRepository, IValidator<GlobalSetting> globalSettingValidator, IValidator<GetAllGlobalSettingsOptions> optionsValidator, IDateTimeProvider dateTimeProvider, IMemoryCache cache)
     {
         _globalSettingsRepository = globalSettingsRepository;
         _globalSettingValidator = globalSettingValidator;
         _optionsValidator = optionsValidator;
+        _dateTimeProvider = dateTimeProvider;
+        _cache = cache;
     }
 
     public async Task<bool> CreateSettingAsync(GlobalSetting setting, CancellationToken token = default)
@@ -61,5 +66,21 @@ public class GlobalSettingsService : IGlobalSettingsService
             // TODO:MAYBE: log this?
             return defaultValue;
         }
+    }
+
+    public async Task<T?> GetSettingCachedAsync<T>(string name, T? defaultValue, CancellationToken token = default)
+    {
+        if (_cache.TryGetValue(name, out T? data))
+        {
+            return data;
+        }
+
+        data = await GetSettingAsync(name, defaultValue, token);
+
+        MemoryCacheEntryOptions options = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
+
+        _cache.Set(name, data, options);
+
+        return data;
     }
 }

@@ -4,7 +4,7 @@ namespace DNDWithin.Application.Repositories;
 
 public interface IAccountRepository
 {
-    Task<bool> CreateAsync(Account account, AccountActivation activation, CancellationToken token = default);
+    Task<bool> CreateAsync(Account account, CancellationToken token = default);
     Task<bool> ExistsByIdAsync(Guid id, CancellationToken token = default);
     Task<bool> ExistsByUsernameAsync(string userName, CancellationToken token = default);
     Task<bool> ExistsByEmailAsync(string email, CancellationToken token = default);
@@ -16,5 +16,5 @@ public interface IAccountRepository
     Task<bool> UpdateAsync(Account account, CancellationToken token = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken token = default);
     Task<bool> ActivateAsync(Account account, CancellationToken token = default);
-    Task<bool> UpdateActivationAsync(Guid accountId, AccountActivation accountActivation, CancellationToken token = default);
+    Task<bool> UpdateActivationAsync(Account account, CancellationToken token = default);
 }

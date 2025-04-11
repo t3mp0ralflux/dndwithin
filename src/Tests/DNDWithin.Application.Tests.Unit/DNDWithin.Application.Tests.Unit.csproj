@@ -27,10 +27,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Repositories\"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\..\DNDWithin.Application\DNDWithin.Application.csproj"/>
         <ProjectReference Include="..\Testing.Common\Testing.Common.csproj"/>
     </ItemGroup>

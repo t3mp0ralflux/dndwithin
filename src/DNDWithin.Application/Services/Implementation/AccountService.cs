@@ -36,9 +36,9 @@ public class AccountService : IAccountService
         account.UpdatedUtc = _dateTimeProvider.GetUtcNow();
         account.Password = _passwordHasher.Hash(account.Password);
 
-        (int expirationMinutes, AccountActivation activation) = await CreateActivationData(account, token);
+        await CreateActivationData(account, token);
 
-        bool success = await _accountRepository.CreateAsync(account, activation, token);
+        bool success = await _accountRepository.CreateAsync(account, token);
 
         if (!success)
         {
@@ -47,7 +47,7 @@ public class AccountService : IAccountService
 
         try
         {
-            await QueueActivationEmail(account, activation, expirationMinutes, token);
+            await QueueActivationEmail(account, token);
         }
         catch (Exception ex)
         {
@@ -74,8 +74,13 @@ public class AccountService : IAccountService
         return await _accountRepository.GetCountAsync(username, token);
     }
 
-    public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
+    public async Task<Account?> GetByEmailAsync(string? email, CancellationToken token = default)
     {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+        
         return await _accountRepository.GetByEmailAsync(email, token);
     }
 
@@ -110,7 +115,7 @@ public class AccountService : IAccountService
             throw new ValidationException("No account found");
         }
 
-        if (existingAccount.Activation.Code != activation.ActivationCode || existingAccount.Activation.Expiration < _dateTimeProvider.GetUtcNow())
+        if (existingAccount.ActivationCode != activation.ActivationCode || existingAccount.ActivationExpiration < _dateTimeProvider.GetUtcNow())
         {
             throw new ValidationException("Activation is invalid");
         }
@@ -133,14 +138,14 @@ public class AccountService : IAccountService
             throw new ValidationException("No account found");
         }
 
-        if (!string.Equals(account.Activation.Code, activationRequest.ActivationCode))
+        if (!string.Equals(account.ActivationCode, activationRequest.ActivationCode))
         {
             throw new ValidationException("Activation code invalid");
         }
 
-        (int expirationMinutes, AccountActivation activation) = await CreateActivationData(account, token);
+        await CreateActivationData(account, token);
 
-        bool success = await _accountRepository.UpdateActivationAsync(account.Id, activation, token);
+        bool success = await _accountRepository.UpdateActivationAsync(account, token);
 
         if (!success)
         {
@@ -149,7 +154,7 @@ public class AccountService : IAccountService
 
         try
         {
-            await QueueActivationEmail(account, activation, expirationMinutes, token);
+            await QueueActivationEmail(account, token);
         }
         catch (Exception e)
         {
@@ -159,11 +164,12 @@ public class AccountService : IAccountService
         return success;
     }
 
-    private async Task QueueActivationEmail(Account account, AccountActivation activation, int expirationMinutes, CancellationToken token = default)
+    private async Task QueueActivationEmail(Account account, CancellationToken token = default)
     {
-        string? linkFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty, token);
-        string? emailFormat = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty, token);
-        string? serviceUsername = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty, token);
+        string? linkFormat = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty, token);
+        string? emailFormat = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty, token);
+        string? serviceUsername = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty, token);
+        int expirationMinutes = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACCOUNT_ACTIVATION_EXPIRATION_MINS, 5, token);
 
         Account? serviceAccount = await _accountRepository.GetByUsernameAsync(serviceUsername, token);
 
@@ -177,23 +183,18 @@ public class AccountService : IAccountService
                              ReceiverAccountId = account.Id,
                              SenderEmail = serviceAccount.Email,
                              RecipientEmail = account.Email,
-                             Body = string.Format(emailFormat, string.Format(linkFormat, account.Username, activation.ActivationCode), expirationMinutes), // TODO:MUST: this will be pre-formatted HTML for emails with standard warnings in it.
+                             Body = string.Format(emailFormat, string.Format(linkFormat, account.Username, account.ActivationCode), expirationMinutes), // TODO:MUST: this will be pre-formatted HTML for emails with standard warnings in it.
                              ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created;"
                          };
 
         _emailService.QueueEmailAsync(data, token); // fire and forget, no waiting.
     }
 
-    private async Task<(int expirationMinutes, AccountActivation activation)> CreateActivationData(Account account, CancellationToken token)
+    private async Task CreateActivationData(Account account, CancellationToken token)
     {
-        int expirationMinutes = await _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACCOUNT_ACTIVATION_EXPIRATION_MINS, 5, token);
+        int expirationMinutes = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACCOUNT_ACTIVATION_EXPIRATION_MINS, 5, token);
 
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           Expiration = _dateTimeProvider.GetUtcNow().AddMinutes(expirationMinutes),
-                                           ActivationCode = _passwordHasher.CreateActivationToken()
-                                       };
-        return (expirationMinutes, activation);
+        account.ActivationExpiration = _dateTimeProvider.GetUtcNow().AddMinutes(expirationMinutes);
+        account.ActivationCode = _passwordHasher.CreateActivationToken();
     }
 }

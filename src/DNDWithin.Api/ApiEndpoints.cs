@@ -22,6 +22,16 @@ public static class ApiEndpoints
         public const string Login = $"{Base}/login";
     }
 
+    public static class Characters
+    {
+        private const string Base = $"{ApiBase}/characters";
+        public const string Create = Base;
+        public const string Delete = $"{Base}/{{id:guid}}";
+        public const string Get = $"{Base}/{{id:guid}}";
+        public const string GetAll = Base;
+        public const string Update = Base;
+    }
+
     public static class GlobalSettings
     {
         private const string Base = $"{ApiBase}/globalsettings";

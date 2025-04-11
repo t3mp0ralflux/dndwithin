@@ -31,16 +31,10 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     public async Task CreateAsync_ShouldCreateAccount_WhenDataIsPassed()
     {
         // Arrange
-        Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
-
+        Account account = Fakes.GenerateAccount().WithActivation();
+        
         // Act
-        bool result = await _sut.CreateAsync(account, activation);
+        bool result = await _sut.CreateAsync(account);
 
         // Assert
         result.Should().BeTrue();
@@ -50,15 +44,10 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     public async Task UsernameExistsAsync_ShouldReturnNull_WhenUsernameDoesNotExist()
     {
         // Arrange
-        Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
+        Account account = Fakes.GenerateAccount().WithActivation();
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
+        await _sut.ActivateAsync(account);
 
         // Act
         Account? result = await _sut.GetByUsernameAsync("BigChungus");
@@ -72,17 +61,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
 
-        account.Activation.Code = "Test";
-        account.Activation.Expiration = DateTime.UtcNow;
+        account.ActivationCode = "Test";
+        account.ActivationExpiration = DateTime.UtcNow;
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         Account? result = await _sut.GetByUsernameAsync(account.Username.ToLowerInvariant());
@@ -97,14 +80,8 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
-
-        await _sut.CreateAsync(account, activation);
+        
+        await _sut.CreateAsync(account);
 
         // Act
         Account? result = await _sut.GetByIdAsync(Guid.NewGuid());
@@ -118,17 +95,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
+        
+        account.ActivationCode = "Test";
+        account.ActivationExpiration = DateTime.UtcNow;
 
-        account.Activation.Code = "Test";
-        account.Activation.Expiration = DateTime.UtcNow;
-
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         Account? result = await _sut.GetByIdAsync(account.Id);
@@ -138,7 +109,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeEquivalentTo(account, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
     }
 
-    [SkipIfEnivronmentMissingTheory]
+    [SkipIfEnvironmentMissingTheory]
     [InlineData(AccountStatus.banned, null, null)]
     [InlineData(null, AccountRole.standard, null)]
     [InlineData(null, null, "Bingus")]
@@ -146,13 +117,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount(); // defaults to Active, Admin
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
-
+        
         GetAllAccountsOptions options = new()
                                         {
                                             AccountStatus = accountStatus,
@@ -161,7 +126,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                             Page = 1,
                                             PageSize = 10
                                         };
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         IEnumerable<Account> result = await _sut.GetAllAsync(options);
@@ -184,8 +149,8 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         Account accountToFind = accounts[random.Next(accounts.Count - 1)];
 
-        accountToFind.Activation.Expiration = now;
-        accountToFind.Activation.Code = "Test";
+        accountToFind.ActivationExpiration = now;
+        accountToFind.ActivationCode = "Test";
 
         GetAllAccountsOptions getAllOptions = new()
                                               {
@@ -197,14 +162,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                               };
         foreach (Account account in accounts)
         {
-            AccountActivation activation = new()
-                                           {
-                                               Username = account.Username,
-                                               ActivationCode = "Test",
-                                               Expiration = now
-                                           };
-
-            await _sut.CreateAsync(account, activation);
+            await _sut.CreateAsync(account);
         }
 
         IEnumerable<Account> expectedResult = [accountToFind];
@@ -220,24 +178,17 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                                                   .WhenTypeIs<DateTime>());
     }
 
-    [SkipIfEnivronmentMissingTheory]
+    [SkipIfEnvironmentMissingTheory]
     [InlineData(SortOrder.unordered)]
     [InlineData(SortOrder.ascending)]
     [InlineData(SortOrder.descending)]
     public async Task GetAllAsync_ShouldReturnSortedList_WhenItemsAreFound(SortOrder sortOrder)
     {
         // Arrange
-        List<Account> accounts = Enumerable.Range(5, 10).Select(x => Fakes.GenerateAccount()).ToList();
+        List<Account> accounts = Enumerable.Range(5, 10).Select(_ => Fakes.GenerateAccount()).ToList();
         foreach (Account account in accounts)
         {
-            AccountActivation activation = new()
-                                           {
-                                               Username = account.Username,
-                                               ActivationCode = "Test",
-                                               Expiration = DateTime.UtcNow
-                                           };
-
-            await _sut.CreateAsync(account, activation);
+            await _sut.CreateAsync(account);
         }
 
         GetAllAccountsOptions options = new()
@@ -252,11 +203,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         IEnumerable<Account> dbResult = await _sut.GetAllAsync(options);
         List<Account> results = dbResult.ToList();
 
+        //Assert
         results.Should().NotBeEmpty();
 
         switch (sortOrder)
         {
-            // Assert
             case SortOrder.ascending:
                 results.Should().BeInAscendingOrder(x => x.Username, StringComparer.CurrentCulture);
                 break;
@@ -276,14 +227,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         List<Account> accounts = Enumerable.Range(5, 10).Select(x => Fakes.GenerateAccount()).ToList();
         foreach (Account account in accounts)
         {
-            AccountActivation activation = new()
-                                           {
-                                               Username = account.Username,
-                                               ActivationCode = "Test",
-                                               Expiration = DateTime.UtcNow
-                                           };
-
-            await _sut.CreateAsync(account, activation);
+            await _sut.CreateAsync(account);
         }
 
         // Act
@@ -300,14 +244,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         List<Account> accounts = Enumerable.Range(5, 10).Select(x => Fakes.GenerateAccount()).ToList();
         foreach (Account account in accounts)
         {
-            AccountActivation activation = new()
-                                           {
-                                               Username = account.Username,
-                                               ActivationCode = "Test",
-                                               Expiration = DateTime.UtcNow
-                                           };
-
-            await _sut.CreateAsync(account, activation);
+            await _sut.CreateAsync(account);
         }
 
         Random random = new();
@@ -325,15 +262,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     public async Task GetByEmailAsync_ShouldReturnNull_WhenEmailIsNotFound()
     {
         // Arrange
-        Account? account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
+        Account account = Fakes.GenerateAccount();
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         Account? result = await _sut.GetByEmailAsync("Bingus");
@@ -346,18 +277,12 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     public async Task GetByEmailAsync_ShouldReturnAccount_WhenEmailIsFound()
     {
         // Arrange
-        Account? account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
+        Account account = Fakes.GenerateAccount();
 
-        account.Activation.Code = "Test";
-        account.Activation.Expiration = DateTime.UtcNow;
+        account.ActivationCode = "Test";
+        account.ActivationExpiration = DateTime.UtcNow;
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         Account? result = await _sut.GetByEmailAsync(account.Email.ToLowerInvariant());
@@ -371,15 +296,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     public async Task GetByUsernameAsync_ShouldReturnNull_WhenUsernameIsNotFound()
     {
         // Arrange
-        Account? account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
+        Account account = Fakes.GenerateAccount();
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         Account? result = await _sut.GetByUsernameAsync("Bingus");
@@ -393,17 +312,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account? account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
 
-        account.Activation.Code = "Test";
-        account.Activation.Expiration = DateTime.UtcNow;
+        account.ActivationCode = "Test";
+        account.ActivationExpiration = DateTime.UtcNow;
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         Account? result = await _sut.GetByUsernameAsync(account.Username);
@@ -432,17 +345,11 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         // Arrange
         DateTime now = DateTime.UtcNow;
         Account account = Fakes.GenerateAccount(AccountStatus.active, AccountRole.standard);
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
 
-        account.Activation.Code = "Test";
-        account.Activation.Expiration = DateTime.UtcNow;
+        account.ActivationCode = "Test";
+        account.ActivationExpiration = DateTime.UtcNow;
 
-        await _sut.CreateAsync(account, activation, CancellationToken.None);
+        await _sut.CreateAsync(account);
 
         DateTimeProvider.GetUtcNow().Returns(now);
 
@@ -504,15 +411,10 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         DateTime now = DateTime.UtcNow;
-        Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
+        Account account = Fakes.GenerateAccount().WithActivation();
 
-        await _sut.CreateAsync(account, activation, CancellationToken.None);
+        await _sut.CreateAsync(account);
+        await _sut.ActivateAsync(account);
         DateTimeProvider.GetUtcNow().Returns(now);
 
         // Act
@@ -543,14 +445,8 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         bool result = await _sut.ExistsByIdAsync(account.Id);
@@ -576,14 +472,8 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         bool result = await _sut.ExistsByUsernameAsync(account.Username.ToLowerInvariant());
@@ -609,14 +499,8 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        AccountActivation activation = new()
-                                       {
-                                           Username = account.Username,
-                                           ActivationCode = "Test",
-                                           Expiration = DateTime.UtcNow
-                                       };
 
-        await _sut.CreateAsync(account, activation);
+        await _sut.CreateAsync(account);
 
         // Act
         bool result = await _sut.ExistsByEmailAsync(account.Email.ToLowerInvariant());
@@ -626,21 +510,14 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     }
 
     [SkipIfEnvironmentMissingFact]
-    public async Task ActivateAsync_ShouldReturnTrueAndDeleteActivation_WhenAccountIsActivated()
+    public async Task ActivateAsync_ShouldReturnTrueAndNullActivationFields_WhenAccountIsActivated()
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Test";
-        account.Activation.Expiration = DateTime.Now;
-
-        AccountActivation accountActivation = new()
-                                              {
-                                                  ActivationCode = account.Activation.Code,
-                                                  Expiration = account.Activation.Expiration,
-                                                  Username = account.Username
-                                              };
-
-        await _sut.CreateAsync(account, accountActivation);
+        account.ActivationCode = "Test";
+        account.ActivationExpiration = DateTime.Now;
+        
+        await _sut.CreateAsync(account);
 
         // Act
         bool result = await _sut.ActivateAsync(account);
@@ -650,7 +527,8 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         Account? activatedAccount = await _sut.GetByIdAsync(account.Id);
         activatedAccount.Should().NotBeNull();
-        activatedAccount.Activation.Should().BeNull();
+        activatedAccount.ActivationCode.Should().BeNull();
+        activatedAccount.ActivationExpiration.Should().BeNull();
     }
 
     [SkipIfEnvironmentMissingFact]
@@ -659,16 +537,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         // Arrange
         DateTime now = DateTime.UtcNow;
         Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Old and Busted";
-        account.Activation.Expiration = DateTime.MinValue;
-
-        AccountActivation oldAccountActivation = new()
-                                                 {
-                                                     Username = account.Username,
-                                                     ActivationCode = account.Activation.Code,
-                                                     Expiration = account.Activation.Expiration
-                                                 };
-
+        account.ActivationCode = "Old and Busted";
+        account.ActivationExpiration = DateTime.MinValue;
+        
         AccountActivation updatedAccountActivation = new()
                                                      {
                                                          Username = account.Username,
@@ -676,17 +547,20 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
                                                          Expiration = now
                                                      };
 
-        await _sut.CreateAsync(account, oldAccountActivation);
+        await _sut.CreateAsync(account);
+
+        account.ActivationCode = updatedAccountActivation.ActivationCode;
+        account.ActivationExpiration = updatedAccountActivation.Expiration;
 
         // Act
-        bool result = await _sut.UpdateActivationAsync(account.Id, updatedAccountActivation);
+        bool result = await _sut.UpdateActivationAsync(account);
 
         // Assert
         result.Should().BeTrue();
 
         Account? updatedAccount = await _sut.GetByIdAsync(account.Id);
         updatedAccount.Should().NotBeNull();
-        updatedAccount.Activation.Code.Should().Be(updatedAccountActivation.ActivationCode);
-        updatedAccount.Activation.Expiration.Should().BeCloseTo(updatedAccountActivation.Expiration, TimeSpan.FromSeconds(1));
+        updatedAccount.ActivationCode.Should().Be(updatedAccountActivation.ActivationCode);
+        updatedAccount.ActivationExpiration.Should().BeCloseTo(updatedAccountActivation.Expiration, TimeSpan.FromSeconds(1));
     }
 }

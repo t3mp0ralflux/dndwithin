@@ -15,7 +15,7 @@ public interface IAccountService
     Task<Account?> GetByIdAsync(Guid id, CancellationToken token = default);
     Task<IEnumerable<Account>> GetAllAsync(GetAllAccountsOptions options, CancellationToken token = default);
     Task<int> GetCountAsync(string? username, CancellationToken token = default);
-    Task<Account?> GetByEmailAsync(string email, CancellationToken token = default);
+    Task<Account?> GetByEmailAsync(string? email, CancellationToken token = default);
     Task<Account?> GetByUsernameAsync(string username, CancellationToken token = default);
     Task<Account?> UpdateAsync(Account account, CancellationToken token = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken token = default);

@@ -2,9 +2,9 @@
 
 namespace DNDWithin.Application.Tests.Integration;
 
-public sealed class SkipIfEnivronmentMissingTheory : TheoryAttribute
+public sealed class SkipIfEnvironmentMissingTheory : TheoryAttribute
 {
-    public SkipIfEnivronmentMissingTheory()
+    public SkipIfEnvironmentMissingTheory()
     {
         if (!IsDockerRunning())
         {

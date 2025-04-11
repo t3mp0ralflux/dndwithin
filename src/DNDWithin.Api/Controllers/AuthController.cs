@@ -20,7 +20,7 @@ public class AuthController : ControllerBase
         _jwtTokenGeneratorService = jwtTokenGeneratorService;
     }
 
-    [HttpPost("login")]
+    [HttpPost(ApiEndpoints.Auth.Login)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken token)
     {
         Account? account;

@@ -9,4 +9,5 @@ public interface IGlobalSettingsService
     Task<int> GetCountAsync(string name, CancellationToken token = default);
     Task<GlobalSetting?> GetSettingAsync(string name, CancellationToken token = default);
     Task<T?> GetSettingAsync<T>(string name, T? defaultValue, CancellationToken token = default);
+    Task<T?> GetSettingCachedAsync<T>(string name, T? defaultValue, CancellationToken token = default);
 }

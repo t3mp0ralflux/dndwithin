@@ -6,4 +6,5 @@ namespace DNDWithin.Api.Controllers;
 [Route("api/debug")]
 public class DebugController : ControllerBase
 {
+
 }

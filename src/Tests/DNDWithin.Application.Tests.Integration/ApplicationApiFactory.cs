@@ -24,9 +24,8 @@ public class ApplicationApiFactory : WebApplicationFactory<IApiMarker>, IAsyncLi
     public async Task InitializeAsync()
     {
         await _dbContainer.StartAsync();
-        // var scripts = await File.ReadAllTextAsync("../../../../../scripts/create-db.sql");
         StringBuilder? sb = new();
-        foreach (string file in Directory.GetFiles("../../../../../scripts"))
+        foreach (string file in Directory.GetFiles("../../../../../scripts").Order())
         {
             string script = await File.ReadAllTextAsync(file);
             sb.AppendLine(script);

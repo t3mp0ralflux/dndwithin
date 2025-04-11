@@ -13,6 +13,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 ConfigurationManager config = builder.Configuration;
 
 // Add services to the container.
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IJwtTokenGeneratorService, JwtTokenGeneratorService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
