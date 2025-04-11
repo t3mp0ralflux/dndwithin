@@ -59,7 +59,7 @@ public class CharacterRepository : ICharacterRepository
 
         IEnumerable<Character> result = await connection.QueryAsync<Character, Characteristics, Character>(new CommandDefinition("""
                                                                                                                                  select c.id, c.account_id as AccountId, c.username, c.name, c.created_utc as CreatedUtc, c.updated_utc as UpdatedUtc, c.deleted_utc as DeletedUtc, 
-                                                                                                                                 ch.Gender, ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight, ch.faith
+                                                                                                                                 ch.gender, ch.age, ch.hair, ch.eyes, ch.skin, ch.height, ch.weight, ch.faith
                                                                                                                                  from character c left join characteristics ch on c.id = ch.character_id
                                                                                                                                  where c.id = @id and deleted_utc is null
                                                                                                                                  """, new { id }, cancellationToken: token), (character, characteristics) =>

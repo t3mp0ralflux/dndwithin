@@ -42,7 +42,7 @@ public class AccountServiceTests
         DateTime now = DateTime.UtcNow;
         Account account = Fakes.GenerateAccount();
 
-        _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(false);
+        _accountRepository.CreateAsync(Arg.Any<Account>()).Returns(false);
         _dateTimeProvider.GetUtcNow().Returns(now);
 
         // Act
@@ -65,14 +65,14 @@ public class AccountServiceTests
         string testEmailFormat = $"Data: {testLinkFormat}";
 
         _dateTimeProvider.GetUtcNow().Returns(now);
-        _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
-        _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
+        _accountRepository.CreateAsync(Arg.Any<Account>()).Returns(true);
+        _accountRepository.GetByUsernameAsync(serviceAccount.Username).Returns(serviceAccount);
         _passwordHasher.CreateActivationToken().Returns("Test");
         _passwordHasher.Hash(account.Password).Returns("TestHash");
 
-        _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
-        _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
-        _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
 
         EmailData expectedQueuedEmail = new()
                                         {
@@ -129,7 +129,7 @@ public class AccountServiceTests
         Account serviceAccount = Fakes.GenerateAccount();
 
         _dateTimeProvider.GetUtcNow().Returns(now);
-        _accountRepository.CreateAsync(Arg.Any<Account>(), Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
+        _accountRepository.CreateAsync(Arg.Any<Account>()).Returns(true);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
         _emailService.QueueEmailAsync(Arg.Any<EmailData>()).Throws(new TimeoutException("Db Timeout"));
 
@@ -383,7 +383,7 @@ public class AccountServiceTests
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Old and busted";
+        account.ActivationCode = "Old and busted";
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
 
@@ -405,8 +405,7 @@ public class AccountServiceTests
     public async Task ActivateAsync_ShouldThrowValidationException_WhenActivationExpirationIsNotValid()
     {
         // Arrange
-        Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Test";
+        Account account = Fakes.GenerateAccount().WithActivation();
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
         _dateTimeProvider.GetUtcNow().Returns(DateTime.UtcNow);
@@ -414,7 +413,7 @@ public class AccountServiceTests
         AccountActivation activation = new()
                                        {
                                            Username = account.Username,
-                                           ActivationCode = account.Activation.Code,
+                                           ActivationCode = account.ActivationCode,
                                            Expiration = DateTime.MinValue
                                        };
 
@@ -430,7 +429,7 @@ public class AccountServiceTests
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Test";
+        account.ActivationCode = "Test";
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
         _accountRepository.ActivateAsync(Arg.Any<Account>()).Returns(false);
@@ -438,7 +437,7 @@ public class AccountServiceTests
         AccountActivation activation = new()
                                        {
                                            Username = account.Username,
-                                           ActivationCode = account.Activation.Code,
+                                           ActivationCode = account.ActivationCode,
                                            Expiration = DateTime.MinValue
                                        };
 
@@ -454,7 +453,7 @@ public class AccountServiceTests
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Test";
+        account.ActivationCode = "Test";
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
         _accountRepository.ActivateAsync(Arg.Any<Account>()).Returns(true);
@@ -462,7 +461,7 @@ public class AccountServiceTests
         AccountActivation activation = new()
                                        {
                                            Username = account.Username,
-                                           ActivationCode = account.Activation.Code,
+                                           ActivationCode = account.ActivationCode,
                                            Expiration = DateTime.MinValue
                                        };
 
@@ -499,7 +498,7 @@ public class AccountServiceTests
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Old and busted";
+        account.ActivationCode = "Old and busted";
 
         AccountActivation request = new()
                                     {
@@ -522,17 +521,17 @@ public class AccountServiceTests
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        account.Activation.Code = "Test";
+        account.ActivationCode = "Test";
 
         AccountActivation request = new()
                                     {
                                         Username = account.Username,
-                                        ActivationCode = account.Activation.Code,
+                                        ActivationCode = account.ActivationCode,
                                         Expiration = DateTime.MinValue
                                     };
 
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
-        _accountRepository.UpdateActivationAsync(account.Id, Arg.Any<AccountActivation>()).Returns(false);
+        _accountRepository.UpdateActivationAsync(Arg.Any<Account>()).Returns(false);
 
         // Act
         bool result = await _sut.ResendActivationAsync(request);
@@ -549,12 +548,12 @@ public class AccountServiceTests
         Account account = Fakes.GenerateAccount();
         Account serviceAccount = Fakes.GenerateAccount();
 
-        account.Activation.Code = "Test";
+        account.ActivationCode = "Test";
 
         AccountActivation request = new()
                                     {
                                         Username = account.Username,
-                                        ActivationCode = account.Activation.Code,
+                                        ActivationCode = account.ActivationCode,
                                         Expiration = DateTime.UtcNow
                                     };
 
@@ -563,13 +562,13 @@ public class AccountServiceTests
         string testEmailFormat = $"Data: {testLinkFormat}";
 
         _dateTimeProvider.GetUtcNow().Returns(now);
-        _accountRepository.UpdateActivationAsync(account.Id, Arg.Any<AccountActivation>()).Returns(true);
-        _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
-        _accountRepository.GetByUsernameAsync(account.Username, Arg.Any<CancellationToken>()).Returns(account);
+        _accountRepository.UpdateActivationAsync(Arg.Any<Account>()).Returns(true);
+        _accountRepository.GetByUsernameAsync(serviceAccount.Username).Returns(serviceAccount);
+        _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
 
-        _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
-        _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
-        _globalSettingsService.GetSettingAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
 
         EmailData expectedQueuedEmail = new()
                                         {
@@ -617,23 +616,23 @@ public class AccountServiceTests
         Account account = Fakes.GenerateAccount();
         Account serviceAccount = Fakes.GenerateAccount();
 
-        account.Activation.Code = "Test";
+        account.ActivationCode = "Test";
 
         AccountActivation request = new()
                                     {
                                         Username = account.Username,
-                                        ActivationCode = account.Activation.Code,
+                                        ActivationCode = account.ActivationCode,
                                         Expiration = DateTime.UtcNow
                                     };
 
         _dateTimeProvider.GetUtcNow().Returns(now);
-        _accountRepository.UpdateActivationAsync(account.Id, Arg.Any<AccountActivation>(), CancellationToken.None).Returns(true);
+        _accountRepository.UpdateActivationAsync(Arg.Any<Account>()).Returns(true);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username, Arg.Any<CancellationToken>()).Returns(serviceAccount);
         _accountRepository.GetByUsernameAsync(account.Username, Arg.Any<CancellationToken>()).Returns(account);
         _emailService.QueueEmailAsync(Arg.Any<EmailData>()).Throws(new TimeoutException("Db Timeout"));
 
         // Act
-        bool result = await _sut.ResendActivationAsync(request); // TODO: WRONG
+        bool result = await _sut.ResendActivationAsync(request);
 
         // Assert
         result.Should().BeTrue();

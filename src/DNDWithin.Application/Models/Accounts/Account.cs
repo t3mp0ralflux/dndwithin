@@ -17,11 +17,14 @@ public class Account
     public DateTime LastLoginUtc { get; set; }
     public DateTime? ActivatedUtc { get; set; }
     public DateTime? DeletedUtc { get; set; }
-    public Activation Activation { get; set; } = new();
+    public DateTime? ActivationExpiration { get; set; }
+    public string? ActivationCode { get; set; }
 }
 
 public class Activation
 {
     public DateTime Expiration { get; set; }
     public string Code { get; set; }
+    
+    public void WithActivation(){}
 }

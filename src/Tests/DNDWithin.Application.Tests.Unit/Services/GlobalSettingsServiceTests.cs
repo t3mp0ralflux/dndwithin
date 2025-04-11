@@ -3,6 +3,7 @@ using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Services.Implementation;
 using FluentAssertions;
 using FluentValidation;
+using Microsoft.Extensions.Caching.Memory;
 using NSubstitute;
 using Testing.Common;
 
@@ -13,10 +14,12 @@ public class GlobalSettingsServiceTests
     private readonly IValidator<GetAllGlobalSettingsOptions> _globalSettingOptionsValidator = Substitute.For<IValidator<GetAllGlobalSettingsOptions>>();
     private readonly IGlobalSettingsRepository _globalSettingsRepository = Substitute.For<IGlobalSettingsRepository>();
     private readonly IValidator<GlobalSetting> _globalSettingValidator = Substitute.For<IValidator<GlobalSetting>>();
+    private readonly IDateTimeProvider _dateTimeProvider = Substitute.For<IDateTimeProvider>();
+    private readonly IMemoryCache _memoryCache = Substitute.For<IMemoryCache>();
 
     public GlobalSettingsServiceTests()
     {
-        _sut = new GlobalSettingsService(_globalSettingsRepository, _globalSettingValidator, _globalSettingOptionsValidator);
+        _sut = new GlobalSettingsService(_globalSettingsRepository, _globalSettingValidator, _globalSettingOptionsValidator, _dateTimeProvider, _memoryCache);
     }
 
     public GlobalSettingsService _sut { get; set; }

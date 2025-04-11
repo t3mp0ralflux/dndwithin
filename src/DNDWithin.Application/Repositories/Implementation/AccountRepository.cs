@@ -24,7 +24,9 @@ public class AccountRepository : IAccountRepository
                                             acct.last_login_utc as lastloginutc, 
                                             acct.deleted_utc as deletedutc, 
                                             acct.account_status as accountstatus, 
-                                            acct.account_role as accountrole 
+                                            acct.account_role as accountrole,
+                                            acct.activation_expiration as activationexpiration,
+                                            acct.activation_code as activationcode
                                             """;
 
     public AccountRepository(IDbConnectionFactory dbConnection, IDateTimeProvider dateTimeProvider)
@@ -33,22 +35,15 @@ public class AccountRepository : IAccountRepository
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task<bool> CreateAsync(Account account, AccountActivation activation, CancellationToken token = default)
+    public async Task<bool> CreateAsync(Account account, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
         using IDbTransaction transaction = connection.BeginTransaction();
 
         int result = await connection.ExecuteAsync(new CommandDefinition("""
-                                                                         insert into account(id, first_name, last_name, username, email, password, created_utc, updated_utc, last_login_utc, deleted_utc, account_status, account_role)
-                                                                         values (@Id, @FirstName, @LastName, @UserName, @Email, @Password, @CreatedUtc, @UpdatedUtc, @LastLoginUtc, @DeletedUtc, @AccountStatus, @AccountRole)
+                                                                         insert into account(id, first_name, last_name, username, email, password, created_utc, updated_utc, last_login_utc, deleted_utc, account_status, account_role, activation_expiration, activation_code)
+                                                                         values (@Id, @FirstName, @LastName, @UserName, @Email, @Password, @CreatedUtc, @UpdatedUtc, @LastLoginUtc, @DeletedUtc, @AccountStatus, @AccountRole, @ActivationExpiration, @ActivationCode)
                                                                          """, account, cancellationToken: token));
-        if (result > 0)
-        {
-            await connection.ExecuteAsync(new CommandDefinition("""
-                                                                 insert into accountactivation(id, account_id, expiration, code)
-                                                                 values(@Id, @AccountId, @Expiration, @Code)
-                                                                """, new { Id = Guid.NewGuid(), Accountid = account.Id, activation.Expiration, code = activation.ActivationCode }));
-        }
 
         transaction.Commit();
 
@@ -95,16 +90,11 @@ public class AccountRepository : IAccountRepository
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
 
-        Account? result = (await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
-                                                                                                            select {AccountFields}, actv.expiration, actv.code
-                                                                                                            from account acct
-                                                                                                            left join accountactivation actv on acct.id = actv.account_id
-                                                                                                            where acct.id = @id 
-                                                                                                            """, new { id }, cancellationToken: token), (account, activation) =>
-                                                                                                                                                        {
-                                                                                                                                                            account.Activation = activation;
-                                                                                                                                                            return account;
-                                                                                                                                                        }, "expiration")).FirstOrDefault();
+        Account? result = await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
+                                                                                                      select {AccountFields}
+                                                                                                      from account acct
+                                                                                                      where acct.id = @id 
+                                                                                                      """, new { id }, cancellationToken: token));
 
         return result;
     }
@@ -120,10 +110,9 @@ public class AccountRepository : IAccountRepository
             orderClause = $"order by {options.SortField} {(options.SortOrder == SortOrder.ascending ? "asc" : "desc")}";
         }
 
-        IEnumerable<Account> results = await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
-                                                                                                                        select {AccountFields}, actv.expiration, actv.code
+        IEnumerable<Account> results = await connection.QueryAsync<Account>(new CommandDefinition($"""
+                                                                                                                        select {AccountFields}
                                                                                                                         from account acct
-                                                                                                                        left join accountactivation actv on acct.id = actv.account_id
                                                                                                                         where (@username is null or lower(username) like ('%' || @username || '%'))
                                                                                                                         and (@accountrole is null or account_role = @accountrole)
                                                                                                                         and (@accountstatus is null or account_status = @accountstatus )
@@ -137,11 +126,7 @@ public class AccountRepository : IAccountRepository
                                                                                                                                  accountstatus = options.AccountStatus,
                                                                                                                                  pageSize = options.PageSize,
                                                                                                                                  pageOffset = (options.Page - 1) * options.PageSize
-                                                                                                                             }, cancellationToken: token), (account, activation) =>
-                                                                                                                                                           {
-                                                                                                                                                               account.Activation = activation;
-                                                                                                                                                               return account;
-                                                                                                                                                           }, "expiration");
+                                                                                                                             }, cancellationToken: token));
 
         return results;
     }
@@ -159,31 +144,21 @@ public class AccountRepository : IAccountRepository
     public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
-        return (await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
-                                                                                                 select {AccountFields}, actv.expiration, actv.code
+        return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
+                                                                                                 select {AccountFields}
                                                                                                  from account acct
-                                                                                                 left join accountactivation actv on acct.id = actv.account_id
                                                                                                  where lower(email) = @Email
-                                                                                                 """, new { Email = email.ToLowerInvariant() }, cancellationToken: token), (account, activation) =>
-                                                                                                                                                                           {
-                                                                                                                                                                               account.Activation = activation;
-                                                                                                                                                                               return account;
-                                                                                                                                                                           }, "expiration")).FirstOrDefault();
+                                                                                                 """, new { Email = email.ToLowerInvariant() }, cancellationToken: token));
     }
 
     public async Task<Account?> GetByUsernameAsync(string username, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
-        return (await connection.QueryAsync<Account, Activation, Account>(new CommandDefinition($"""
-                                                                                                 select {AccountFields}, actv.expiration, actv.code
+        return await connection.QuerySingleOrDefaultAsync<Account>(new CommandDefinition($"""
+                                                                                                 select {AccountFields}
                                                                                                  from account acct
-                                                                                                 left join accountactivation actv on acct.id = actv.account_id
                                                                                                  where lower(username) = @userName
-                                                                                                 """, new { userName = username.ToLowerInvariant() }, cancellationToken: token), (account, activation) =>
-                                                                                                                                                                                 {
-                                                                                                                                                                                     account.Activation = activation;
-                                                                                                                                                                                     return account;
-                                                                                                                                                                                 }, "expiration")).FirstOrDefault();
+                                                                                                 """, new { userName = username.ToLowerInvariant() }, cancellationToken: token));
     }
 
     public async Task<bool> UpdateAsync(Account account, CancellationToken token = default)
@@ -217,16 +192,7 @@ public class AccountRepository : IAccountRepository
                                                                          set deleted_utc = @DeletedUtc
                                                                          where id = @id
                                                                          """, new { id, DeletedUtc = _dateTimeProvider.GetUtcNow() }, cancellationToken: token));
-
-        if (result > 0)
-        {
-            await connection.ExecuteAsync(new CommandDefinition("""
-                                                                delete
-                                                                from accountactivation 
-                                                                where account_id = @id
-                                                                """, new { id }));
-        }
-
+        
         transaction.Commit();
 
         return result > 0;
@@ -239,34 +205,25 @@ public class AccountRepository : IAccountRepository
 
         int result = await connection.ExecuteAsync(new CommandDefinition("""
                                                                          update account
-                                                                         set account_status = @Status, activated_utc = @Activated, updated_utc = @Updated
+                                                                         set account_status = @Status, activated_utc = @Activated, updated_utc = @Updated, activation_expiration = null, activation_code = null
                                                                          where id = @Id
                                                                          """, new { account.Id, Status = account.AccountStatus, Activated = account.ActivatedUtc, Updated = account.UpdatedUtc }));
-
-        if (result > 0)
-        {
-            await connection.ExecuteAsync(new CommandDefinition("""
-                                                                delete
-                                                                from accountactivation
-                                                                where account_id = @Id
-                                                                """, new { account.Id }));
-        }
 
         transaction.Commit();
 
         return result > 0;
     }
 
-    public async Task<bool> UpdateActivationAsync(Guid accountId, AccountActivation accountActivation, CancellationToken token = default)
+    public async Task<bool> UpdateActivationAsync(Account account, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
         using IDbTransaction transaction = connection.BeginTransaction();
 
         int result = await connection.ExecuteAsync(new CommandDefinition("""
-                                                                         update accountactivation
-                                                                         set code = @ActivationCode, expiration = @Expiration
-                                                                         where account_id = @accountId
-                                                                         """, new { accountId, accountActivation.ActivationCode, accountActivation.Expiration }));
+                                                                         update account
+                                                                         set activation_code = @ActivationCode, activation_expiration = @ActivationExpiration
+                                                                         where id = @Id
+                                                                         """, new { account.Id, account.ActivationCode, account.ActivationExpiration }));
 
         transaction.Commit();
         return result > 0;
