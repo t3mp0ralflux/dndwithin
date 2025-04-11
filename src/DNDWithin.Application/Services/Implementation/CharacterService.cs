@@ -54,7 +54,7 @@ public class CharacterService : ICharacterService
 
     public async Task<bool> UpdateAsync(Character character, CancellationToken token = default)
     {
-        bool exists = await _characterRepository.ExistsById(character.Id, token);
+        bool exists = await _characterRepository.ExistsByIdAsync(character.Id, token);
 
         if (!exists)
         {
@@ -68,7 +68,7 @@ public class CharacterService : ICharacterService
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken token = default)
     {
-        var exists = await _characterRepository.ExistsById(id, token);
+        var exists = await _characterRepository.ExistsByIdAsync(id, token);
 
         if (!exists)
         {

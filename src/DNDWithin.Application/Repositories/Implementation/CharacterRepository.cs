@@ -122,7 +122,7 @@ public class CharacterRepository : ICharacterRepository
         return result;
     }
 
-    public async Task<bool> ExistsById(Guid id, CancellationToken token = default)
+    public async Task<bool> ExistsByIdAsync(Guid id, CancellationToken token = default)
     {
         using IDbConnection connection = await _dbConnectionFactory.CreateConnectionAsync(token);
 
