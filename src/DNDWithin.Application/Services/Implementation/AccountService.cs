@@ -74,8 +74,13 @@ public class AccountService : IAccountService
         return await _accountRepository.GetCountAsync(username, token);
     }
 
-    public async Task<Account?> GetByEmailAsync(string email, CancellationToken token = default)
+    public async Task<Account?> GetByEmailAsync(string? email, CancellationToken token = default)
     {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+        
         return await _accountRepository.GetByEmailAsync(email, token);
     }
 

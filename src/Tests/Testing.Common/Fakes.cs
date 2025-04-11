@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Characters;
 using DNDWithin.Application.Models.GlobalSettings;
 using DNDWithin.Application.Models.System;
 
@@ -51,5 +52,16 @@ public static class Fakes
                                             .RuleFor(x => x.Value, f => value ??= f.Hacker.Noun());
         
         return fakeSetting;
+    }
+
+    public static Character GenerateCharacter(Account account)
+    {
+        Faker<Character>? fakeCharacter = new Faker<Character>()
+                                          .RuleFor(x=>x.Id, _ => Guid.NewGuid())
+                                          .RuleFor(x=>x.AccountId, _ => account.Id)
+                                          .RuleFor(x=>x.Username, _ => account.Username)
+                                          .RuleFor(x=>x.Name, f => f.Person.FullName);
+
+        return fakeCharacter;
     }
 }

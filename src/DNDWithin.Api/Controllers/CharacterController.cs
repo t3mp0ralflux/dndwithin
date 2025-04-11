@@ -26,7 +26,7 @@ public class CharacterController : ControllerBase
     [HttpPost(ApiEndpoints.Characters.Create)]
     public async Task<IActionResult> Create(CancellationToken token)
     {
-        Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
+        Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail(), token);
 
         if (account is null)
         {
