@@ -65,7 +65,7 @@ public class CharacterRepositoryTests : IClassFixture<ApplicationApiFactory>
     }
 
     [SkipIfEnvironmentMissingFact]
-    public async Task GetByIdAsync_ShouldReturnCharacter_WhenCharacterIsFound()
+    public async Task GetByIdAsync_ShouldReturnCharacter_WhenIdIsFound()
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
@@ -112,6 +112,33 @@ public class CharacterRepositoryTests : IClassFixture<ApplicationApiFactory>
         // Assert
         result.Should().NotBeNull();
         result.Should().BeEmpty();
+    }
+    
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchCharacterNameData))]
+    public async Task GetAllAsync_ShouldReturnItems_WhenItemsAreFound(Account account, Character character, string characterName)
+    {
+        // Arrange
+        await _accountRepository.CreateAsync(account);
+
+        if (!await _sut.ExistsByIdAsync(character.Id))
+        {
+            await _sut.CreateAsync(character);
+        }
+
+        GetAllCharactersOptions options = new()
+                                          {
+                                              AccountId = account.Id,
+                                              Page = 1,
+                                              PageSize = 5,
+                                              Name = characterName
+                                          };
+
+        // Act
+        IEnumerable<Character> result = await _sut.GetAllAsync(options);
+
+        // Assert
+        result.Should().NotBeNullOrEmpty();
     }
 
     [SkipIfEnvironmentMissingTheory]
@@ -226,7 +253,7 @@ public class CharacterRepositoryTests : IClassFixture<ApplicationApiFactory>
     }
 
     [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByIdAsync_ShouldReturnTrue_WhenCharacterIsFound()
+    public async Task ExistsByIdAsync_ShouldReturnTrue_WhenIdIsFound()
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
@@ -324,5 +351,16 @@ public class CharacterRepositoryTests : IClassFixture<ApplicationApiFactory>
 
         deletedCharacter.Should().NotBeNull();
         deletedCharacter.DeletedUtc.Should().NotBeNull();
+    }
+    
+    public static IEnumerable<object[]> GetSingleSearchCharacterNameData()
+    {
+        Account account = Fakes.GenerateAccount();
+        Character character = Fakes.GenerateCharacter(account);
+        
+        yield return [account, character, character.Name];
+        yield return [account, character, character.Name.ToLowerInvariant()];
+        yield return [account, character, character.Name.ToUpperInvariant()];
+        yield return [account, character, character.Name.RandomizeCasing()];
     }
 }

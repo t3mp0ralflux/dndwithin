@@ -40,12 +40,13 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeTrue();
     }
 
-    [SkipIfEnvironmentMissingFact]
-    public async Task UsernameExistsAsync_ShouldReturnNull_WhenUsernameDoesNotExist()
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchUsernameData))]
+    public async Task UsernameExistsAsync_ShouldReturnNull_WhenUsernameDoesNotExist(Account account, string username)
     {
         // Arrange
-        Account account = Fakes.GenerateAccount().WithActivation();
-
+        account = account.WithActivation();
+        
         await _sut.CreateAsync(account);
         await _sut.ActivateAsync(account);
 
@@ -56,19 +57,18 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeNull();
     }
 
-    [SkipIfEnvironmentMissingFact]
-    public async Task UsernameExistsAsync_ShouldReturnAccount_WhenUsernameExists()
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchUsernameData))]
+    public async Task UsernameExistsAsync_ShouldReturnAccount_WhenUsernameExists(Account account, string username)
     {
         // Arrange
-        Account account = Fakes.GenerateAccount();
-
         account.ActivationCode = "Test";
         account.ActivationExpiration = DateTime.UtcNow;
-
+        
         await _sut.CreateAsync(account);
-
+        
         // Act
-        Account? result = await _sut.GetByUsernameAsync(account.Username.ToLowerInvariant());
+        Account? result = await _sut.GetByUsernameAsync(username);
 
         // Assert
         result.Should().NotBeNull();
@@ -135,38 +135,37 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeEmpty();
     }
 
-    [SkipIfEnvironmentMissingFact]
-    public async Task GetAllAsync_ShouldReturnListWithOneAccount_WhenItemIsFound()
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchUsernameData))]
+    public async Task GetAllAsync_ShouldReturnListWithOneAccount_WhenItemIsFound(Account accountToFind, string username)
     {
         // Arrange
 
         // defaults to Active, Admin
         List<Account> accounts = Enumerable.Range(5, 10).Select(x => Fakes.GenerateAccount()).ToList();
 
-        Random random = new();
-
         DateTime now = DateTime.UtcNow;
-
-        Account accountToFind = accounts[random.Next(accounts.Count - 1)];
-
+        
         accountToFind.ActivationExpiration = now;
         accountToFind.ActivationCode = "Test";
+        
+        accounts.Add(accountToFind);
 
-        GetAllAccountsOptions getAllOptions = new()
-                                              {
-                                                  AccountStatus = accountToFind.AccountStatus,
-                                                  AccountRole = accountToFind.AccountRole,
-                                                  UserName = accountToFind.Username,
-                                                  Page = 1,
-                                                  PageSize = 5
-                                              };
         foreach (Account account in accounts)
         {
             await _sut.CreateAsync(account);
         }
 
-        IEnumerable<Account> expectedResult = [accountToFind];
-
+        List<Account> expectedResult = [accountToFind];
+        
+        GetAllAccountsOptions getAllOptions = new()
+                                              {
+                                                  AccountStatus = accountToFind.AccountStatus,
+                                                  AccountRole = accountToFind.AccountRole,
+                                                  UserName = username,
+                                                  Page = 1,
+                                                  PageSize = 5
+                                              };
         // Act
         IEnumerable<Account> enumerableResult = await _sut.GetAllAsync(getAllOptions);
         List<Account> result = enumerableResult.ToList();
@@ -273,19 +272,18 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeNull();
     }
 
-    [SkipIfEnvironmentMissingFact]
-    public async Task GetByEmailAsync_ShouldReturnAccount_WhenEmailIsFound()
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchEmailData))]
+    public async Task GetByEmailAsync_ShouldReturnAccount_WhenEmailIsFound(Account account, string email)
     {
         // Arrange
-        Account account = Fakes.GenerateAccount();
-
         account.ActivationCode = "Test";
         account.ActivationExpiration = DateTime.UtcNow;
 
         await _sut.CreateAsync(account);
 
         // Act
-        Account? result = await _sut.GetByEmailAsync(account.Email.ToLowerInvariant());
+        Account? result = await _sut.GetByEmailAsync(email);
 
         // Assert
         result.Should().NotBeNull();
@@ -307,19 +305,18 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeNull();
     }
 
-    [SkipIfEnvironmentMissingFact]
-    public async Task GetByUsernameAsync_ShouldReturnAccount_WhenUsernameIsFound()
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchUsernameData))]
+    public async Task GetByUsernameAsync_ShouldReturnAccount_WhenUsernameIsFound(Account account, string username)
     {
         // Arrange
-        Account? account = Fakes.GenerateAccount();
-
         account.ActivationCode = "Test";
         account.ActivationExpiration = DateTime.UtcNow;
-
+        
         await _sut.CreateAsync(account);
-
+        
         // Act
-        Account? result = await _sut.GetByUsernameAsync(account.Username);
+        Account? result = await _sut.GetByUsernameAsync(username);
 
         // Assert
         result.Should().NotBeNull();
@@ -467,16 +464,15 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeFalse();
     }
 
-    [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByUsernameAsync_ShouldReturnTrue_WhenUsernameIsFound()
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchUsernameData))]
+    public async Task ExistsByUsernameAsync_ShouldReturnTrue_WhenUsernameIsFound(Account account, string username)
     {
         // Arrange
-        Account account = Fakes.GenerateAccount();
-
         await _sut.CreateAsync(account);
 
         // Act
-        bool result = await _sut.ExistsByUsernameAsync(account.Username.ToLowerInvariant());
+        bool result = await _sut.ExistsByUsernameAsync(username);
 
         // Assert
         result.Should().BeTrue();
@@ -494,16 +490,15 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         result.Should().BeFalse();
     }
 
-    [SkipIfEnvironmentMissingFact]
-    public async Task ExistsByEmailAsync_ShouldReturnTrue_WhenEmailIsFound()
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchEmailData))]
+    public async Task ExistsByEmailAsync_ShouldReturnTrue_WhenEmailIsFound(Account account, string email)
     {
         // Arrange
-        Account account = Fakes.GenerateAccount();
-
         await _sut.CreateAsync(account);
 
         // Act
-        bool result = await _sut.ExistsByEmailAsync(account.Email.ToLowerInvariant());
+        bool result = await _sut.ExistsByEmailAsync(email);
 
         // Assert
         result.Should().BeTrue();
@@ -562,5 +557,25 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         updatedAccount.Should().NotBeNull();
         updatedAccount.ActivationCode.Should().Be(updatedAccountActivation.ActivationCode);
         updatedAccount.ActivationExpiration.Should().BeCloseTo(updatedAccountActivation.Expiration, TimeSpan.FromSeconds(1));
+    }
+
+    public static IEnumerable<object[]> GetSingleSearchUsernameData()
+    {
+        Account account = Fakes.GenerateAccount();
+        
+        yield return [account, account.Username];
+        yield return [account, account.Username.ToLowerInvariant()];
+        yield return [account, account.Username.ToUpperInvariant()];
+        yield return [account, account.Username.RandomizeCasing()];
+    }
+    
+    public static IEnumerable<object[]> GetSingleSearchEmailData()
+    {
+        Account account = Fakes.GenerateAccount();
+        
+        yield return [account, account.Email];
+        yield return [account, account.Email.ToLowerInvariant()];
+        yield return [account, account.Email.ToUpperInvariant()];
+        yield return [account, account.Email.RandomizeCasing()];
     }
 }
