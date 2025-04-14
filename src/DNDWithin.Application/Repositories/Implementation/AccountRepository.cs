@@ -43,6 +43,7 @@ public class AccountRepository : IAccountRepository
         int result = await connection.ExecuteAsync(new CommandDefinition("""
                                                                          insert into account(id, first_name, last_name, username, email, password, created_utc, updated_utc, last_login_utc, deleted_utc, account_status, account_role, activation_expiration, activation_code)
                                                                          values (@Id, @FirstName, @LastName, @UserName, @Email, @Password, @CreatedUtc, @UpdatedUtc, @LastLoginUtc, @DeletedUtc, @AccountStatus, @AccountRole, @ActivationExpiration, @ActivationCode)
+                                                                         on conflict do nothing
                                                                          """, account, cancellationToken: token));
 
         transaction.Commit();
@@ -70,7 +71,7 @@ public class AccountRepository : IAccountRepository
                                                                                            select count(id) 
                                                                                            from account 
                                                                                            where lower(username) = @userName 
-                                                                                           """, new { userName }, cancellationToken: token));
+                                                                                           """, new { userName = userName.ToLowerInvariant() }, cancellationToken: token));
         return result > 0;
     }
 
@@ -82,7 +83,7 @@ public class AccountRepository : IAccountRepository
                                                                                            select count(id) 
                                                                                            from account 
                                                                                            where lower(email) = @email 
-                                                                                           """, new { email }, cancellationToken: token));
+                                                                                           """, new { email = email.ToLowerInvariant() }, cancellationToken: token));
         return result > 0;
     }
 

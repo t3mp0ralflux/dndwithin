@@ -104,7 +104,7 @@ public class CharacterRepository : ICharacterRepository
                                                                                                                                   """, new
                                                                                                                                        {
                                                                                                                                            options.AccountId,
-                                                                                                                                           options.Name,
+                                                                                                                                           Name = options.Name?.ToLowerInvariant(),
                                                                                                                                        }, cancellationToken: token), (character, characteristics) =>
                                                                                                                                                                      {
                                                                                                                                                                          character.Characteristics = characteristics;
