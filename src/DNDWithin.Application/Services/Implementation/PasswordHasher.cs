@@ -51,4 +51,14 @@ public class PasswordHasher : IPasswordHasher
 
         return result.ToString();
     }
+
+    public string CreateOneTimeCode()
+    {
+        string result = RandomNumberGenerator
+                        .GetInt32(1000000)
+                        .ToString()
+                        .PadLeft(6, '0'); // six-digit code.
+
+        return result;
+    }
 }

@@ -20,6 +20,8 @@ public static class ApiEndpoints
     {
         private const string Base = "auth";
         public const string Login = $"{Base}/login";
+        public const string RequestPasswordReset = $"{Base}/passwordreset/{{email}}";
+        public const string PasswordReset = $"{Base}/passwordreset";
     }
 
     public static class Characters

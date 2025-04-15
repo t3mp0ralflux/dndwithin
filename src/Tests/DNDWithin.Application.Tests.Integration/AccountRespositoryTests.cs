@@ -2,6 +2,8 @@
 using DNDWithin.Application.Database;
 using DNDWithin.Application.Models;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Auth;
+using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Repositories.Implementation;
 using DNDWithin.Application.Services.Implementation;
 using DNDWithin.Contracts.Requests.Account;
@@ -15,16 +17,16 @@ namespace DNDWithin.Application.Tests.Integration;
 
 public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 {
-    public readonly IDateTimeProvider DateTimeProvider = Substitute.For<IDateTimeProvider>();
+    private readonly IDateTimeProvider _dateTimeProvider = Substitute.For<IDateTimeProvider>();
 
     public AccountRespositoryTests(ApplicationApiFactory apiFactory)
     {
         IDbConnectionFactory connectionFactory = apiFactory.Services.GetRequiredService<IDbConnectionFactory>();
 
-        _sut = new AccountRepository(connectionFactory, DateTimeProvider);
+        _sut = new AccountRepository(connectionFactory, _dateTimeProvider);
     }
 
-    public AccountRepository _sut { get; set; }
+    public IAccountRepository _sut { get; set; }
 
 
     [SkipIfEnvironmentMissingFact]
@@ -32,7 +34,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount().WithActivation();
-        
+
         // Act
         bool result = await _sut.CreateAsync(account);
 
@@ -46,7 +48,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         account = account.WithActivation();
-        
+
         await _sut.CreateAsync(account);
         await _sut.ActivateAsync(account);
 
@@ -64,9 +66,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         // Arrange
         account.ActivationCode = "Test";
         account.ActivationExpiration = DateTime.UtcNow;
-        
+
         await _sut.CreateAsync(account);
-        
+
         // Act
         Account? result = await _sut.GetByUsernameAsync(username);
 
@@ -80,7 +82,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        
+
         await _sut.CreateAsync(account);
 
         // Act
@@ -95,7 +97,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount();
-        
+
         account.ActivationCode = "Test";
         account.ActivationExpiration = DateTime.UtcNow;
 
@@ -117,7 +119,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
     {
         // Arrange
         Account account = Fakes.GenerateAccount(); // defaults to Active, Admin
-        
+
         GetAllAccountsOptions options = new()
                                         {
                                             AccountStatus = accountStatus,
@@ -145,10 +147,10 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         List<Account> accounts = Enumerable.Range(5, 10).Select(x => Fakes.GenerateAccount()).ToList();
 
         DateTime now = DateTime.UtcNow;
-        
+
         accountToFind.ActivationExpiration = now;
         accountToFind.ActivationCode = "Test";
-        
+
         accounts.Add(accountToFind);
 
         foreach (Account account in accounts)
@@ -157,7 +159,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         }
 
         List<Account> expectedResult = [accountToFind];
-        
+
         GetAllAccountsOptions getAllOptions = new()
                                               {
                                                   AccountStatus = accountToFind.AccountStatus,
@@ -312,9 +314,9 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         // Arrange
         account.ActivationCode = "Test";
         account.ActivationExpiration = DateTime.UtcNow;
-        
+
         await _sut.CreateAsync(account);
-        
+
         // Act
         Account? result = await _sut.GetByUsernameAsync(username);
 
@@ -348,7 +350,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         await _sut.CreateAsync(account);
 
-        DateTimeProvider.GetUtcNow().Returns(now);
+        _dateTimeProvider.GetUtcNow().Returns(now);
 
         AccountUpdateRequest request = new()
                                        {
@@ -412,7 +414,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
 
         await _sut.CreateAsync(account);
         await _sut.ActivateAsync(account);
-        DateTimeProvider.GetUtcNow().Returns(now);
+        _dateTimeProvider.GetUtcNow().Returns(now);
 
         // Act
         bool result = await _sut.DeleteAsync(account.Id, CancellationToken.None);
@@ -511,7 +513,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         Account account = Fakes.GenerateAccount();
         account.ActivationCode = "Test";
         account.ActivationExpiration = DateTime.Now;
-        
+
         await _sut.CreateAsync(account);
 
         // Act
@@ -534,7 +536,7 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         Account account = Fakes.GenerateAccount();
         account.ActivationCode = "Old and Busted";
         account.ActivationExpiration = DateTime.MinValue;
-        
+
         AccountActivation updatedAccountActivation = new()
                                                      {
                                                          Username = account.Username,
@@ -559,20 +561,88 @@ public class AccountRespositoryTests : IClassFixture<ApplicationApiFactory>
         updatedAccount.ActivationExpiration.Should().BeCloseTo(updatedAccountActivation.Expiration, TimeSpan.FromSeconds(1));
     }
 
+    [SkipIfEnvironmentMissingTheory]
+    [MemberData(nameof(GetSingleSearchEmailData))]
+    public async Task RequestPasswordResetAsync_ShouldReturnTrueAndUpdatePasswordResetInformation_WhenPasswordIsRequestedToBeReset(Account account, string email)
+    {
+        // Arrange
+        DateTime now = DateTime.UtcNow;
+        _dateTimeProvider.GetUtcNow().Returns(now);
+
+        const string resetCode = "069420";
+
+        await _sut.CreateAsync(account);
+
+        // Act
+        bool result = await _sut.RequestPasswordResetAsync(email, resetCode);
+
+        // Assert
+        result.Should().BeTrue();
+
+        Account? updatedResult = await _sut.GetByIdAsync(account.Id);
+
+        updatedResult.Should().BeEquivalentTo(account, options =>
+                                                       {
+                                                           options.Excluding(x => x.PasswordResetRequestedUtc);
+                                                           options.Excluding(x => x.ResetCode);
+                                                           options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>();
+
+                                                           return options;
+                                                       });
+
+        updatedResult.ResetCode.Should().Be("069420");
+        updatedResult.PasswordResetRequestedUtc.Should().BeCloseTo(now, TimeSpan.FromSeconds(1));
+    }
+
+    [SkipIfEnvironmentMissingFact]
+    public async Task ResetPasswordAsync_ShouldResetPassword_WhenPasswordIsReset()
+    {
+        // Arrange
+        var account = Fakes.GenerateAccount();
+        
+        PasswordReset passwordReset = new()
+                                      {
+                                          Email = account.Email,
+                                          Password = "TestPassword",
+                                          ResetCode = "069420"
+                                      };
+
+        DateTime now = DateTime.UtcNow;
+        _dateTimeProvider.GetUtcNow().Returns(now);
+
+        await _sut.CreateAsync(account);
+
+        Account expectedResult = account.Clone();
+        expectedResult.Password = "TestPassword";
+        expectedResult.PasswordResetRequestedUtc = null;
+        expectedResult.ResetCode = null;
+        expectedResult.UpdatedUtc = now;
+
+        // Act
+        bool result = await _sut.ResetPasswordAsync(passwordReset);
+
+        // Assert
+        result.Should().BeTrue();
+
+        Account? updatedResult = await _sut.GetByIdAsync(account.Id);
+
+        updatedResult.Should().BeEquivalentTo(expectedResult, options => options.Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>());
+    }
+
     public static IEnumerable<object[]> GetSingleSearchUsernameData()
     {
         Account account = Fakes.GenerateAccount();
-        
+
         yield return [account, account.Username];
         yield return [account, account.Username.ToLowerInvariant()];
         yield return [account, account.Username.ToUpperInvariant()];
         yield return [account, account.Username.RandomizeCasing()];
     }
-    
+
     public static IEnumerable<object[]> GetSingleSearchEmailData()
     {
         Account account = Fakes.GenerateAccount();
-        
+
         yield return [account, account.Email];
         yield return [account, account.Email.ToLowerInvariant()];
         yield return [account, account.Email.ToUpperInvariant()];

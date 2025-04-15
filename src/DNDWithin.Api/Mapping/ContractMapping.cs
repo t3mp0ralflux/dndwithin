@@ -1,13 +1,17 @@
 ﻿using DNDWithin.Application.Models;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Auth;
 using DNDWithin.Application.Models.Characters;
 using DNDWithin.Application.Models.GlobalSettings;
 using DNDWithin.Contracts.Requests.Account;
+using DNDWithin.Contracts.Requests.Auth;
 using DNDWithin.Contracts.Requests.Characters;
 using DNDWithin.Contracts.Requests.GlobalSetting;
 using DNDWithin.Contracts.Responses.Account;
+using DNDWithin.Contracts.Responses.Auth;
 using DNDWithin.Contracts.Responses.Characters;
 using DNDWithin.Contracts.Responses.GlobalSetting;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
 using ctr = DNDWithin.Contracts.Models;
 
@@ -96,6 +100,36 @@ public static class ContractMapping
         return new AccountActivationResponse
                {
                    Username = activation.Username
+               };
+    }
+
+    #endregion
+
+    #region Auth
+
+    public static PasswordReset ToReset(this PasswordResetRequest request)
+    {
+        return new PasswordReset
+               {
+                   Email = request.Email,
+                   Password = request.Password,
+                   ResetCode = request.ResetCode
+               };
+    }
+
+    public static PasswordResetResponse ToResponse(this PasswordReset passwordReset)
+    {
+        return new PasswordResetResponse
+               {
+                   Email = passwordReset.Email
+               };
+    }
+
+    public static AccountLogin ToLogin(this Account account)
+    {
+        return new AccountLogin
+               {
+                   Email = account.Email,
                };
     }
 

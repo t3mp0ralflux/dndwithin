@@ -1,6 +1,10 @@
-﻿using DNDWithin.Api.Services;
+﻿using DNDWithin.Api.Mapping;
+using DNDWithin.Api.Services;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Auth;
 using DNDWithin.Application.Services;
+using DNDWithin.Contracts.Requests.Auth;
+using DNDWithin.Contracts.Responses.Auth;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,14 +14,16 @@ namespace DNDWithin.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAccountService _accountService;
+    private readonly IAuthService _authService;
     private readonly IJwtTokenGeneratorService _jwtTokenGeneratorService;
     private readonly IPasswordHasher _passwordHasher;
 
-    public AuthController(IAccountService accountService, IPasswordHasher passwordHasher, IJwtTokenGeneratorService jwtTokenGeneratorService)
+    public AuthController(IAccountService accountService, IPasswordHasher passwordHasher, IJwtTokenGeneratorService jwtTokenGeneratorService, IAuthService authService)
     {
         _accountService = accountService;
         _passwordHasher = passwordHasher;
         _jwtTokenGeneratorService = jwtTokenGeneratorService;
+        _authService = authService;
     }
 
     [HttpPost(ApiEndpoints.Auth.Login)]
@@ -42,7 +48,7 @@ public class AuthController : ControllerBase
         {
             return Unauthorized("You must activate your account before you can login");
         }
-
+        
         bool verified = _passwordHasher.Verify(request.Password, account.Password);
 
         if (!verified)
@@ -50,8 +56,39 @@ public class AuthController : ControllerBase
             return Unauthorized("Username or password is incorrect");
         }
 
-        string jwtToken = _jwtTokenGeneratorService.GenerateToken(account, request, token);
+        AccountLogin accountLogin = account.ToLogin();
+
+        await _authService.LoginAsync(accountLogin, token);
+
+        string jwtToken = _jwtTokenGeneratorService.GenerateToken(account, token);
 
         return Ok(jwtToken);
+    }
+
+    [HttpPost(ApiEndpoints.Auth.RequestPasswordReset)]
+    public async Task<IActionResult> RequestPasswordReset([FromRoute] string email, CancellationToken token)
+    {
+        await _accountService.RequestPasswordReset(email, token); // DO NOT SURFACE TO USER. If the account isn't found, it'll fail in silence.
+
+        return Ok();
+    }
+
+    [HttpPost(ApiEndpoints.Auth.PasswordReset)]
+    public async Task<IActionResult> PasswordReset([FromBody] PasswordResetRequest request, CancellationToken token)
+    {
+        bool accountExists = await _accountService.ExistsByEmailAsync(request.Email, token);
+
+        if (!accountExists)
+        {
+            return NotFound();
+        }
+
+        PasswordReset passwordReset = request.ToReset();
+
+        await _accountService.ResetPassword(passwordReset, token);
+
+        PasswordResetResponse response = passwordReset.ToResponse();
+
+        return Ok(response);
     }
 }

@@ -8,7 +8,7 @@ namespace Testing.Common;
 
 public static class Fakes
 {
-    public static Account GenerateAccount(AccountStatus? status = AccountStatus.active, AccountRole? role = AccountRole.admin, string? userName = null, bool isDeleted = false)
+    public static Account GenerateAccount(AccountStatus? status = AccountStatus.active, AccountRole? role = AccountRole.admin, string? userName = null, bool isDeleted = false, bool isReset = false)
     {
         Faker<Account> fakeAccount = new Faker<Account>()
                                      .RuleFor(x => x.Id, f => Guid.NewGuid())
@@ -22,7 +22,9 @@ public static class Fakes
                                      .RuleFor(x => x.CreatedUtc, f => f.Date.Recent())
                                      .RuleFor(x => x.UpdatedUtc, f => f.Date.Recent())
                                      .RuleFor(x => x.LastLoginUtc, f => f.Date.Recent())
-                                     .RuleFor(x => x.DeletedUtc, f => isDeleted ? DateTime.UtcNow : null);
+                                     .RuleFor(x => x.DeletedUtc, _ => isDeleted ? DateTime.UtcNow : null)
+                                     .RuleFor(x=>x.PasswordResetRequestedUtc, _=> isReset ? DateTime.UtcNow : null)
+                                     .RuleFor(x=>x.ResetCode, _ => isReset ? "ResetCode" : null);
 
         return fakeAccount;
     }

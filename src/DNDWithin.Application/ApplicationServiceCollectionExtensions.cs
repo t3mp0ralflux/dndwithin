@@ -25,6 +25,7 @@ public static class ApplicationServiceCollectionExtensions
         #region Services
 
         services.AddSingleton<IAccountService, AccountService>();
+        services.AddSingleton<IAuthService, AuthService>();
         services.AddSingleton<IGlobalSettingsService, GlobalSettingsService>();
         services.AddSingleton<IEmailService, EmailService>();
         services.AddSingleton<ICharacterService, CharacterService>();
