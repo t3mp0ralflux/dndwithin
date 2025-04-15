@@ -1,4 +1,5 @@
 ﻿using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Auth;
 using DNDWithin.Application.Models.System;
 using DNDWithin.Application.Repositories;
 using DNDWithin.Application.Services;
@@ -24,13 +25,15 @@ public class AccountServiceTests
     private readonly ILogger<AccountService> _logger = Substitute.For<ILogger<AccountService>>();
     private readonly IValidator<GetAllAccountsOptions> _optionsValidator = Substitute.For<IValidator<GetAllAccountsOptions>>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
-    public EquivalencyOptions<Account> _EquivalencyOptions;
+    private readonly IValidator<PasswordReset> _passwordResetValidator = Substitute.For<IValidator<PasswordReset>>();
+    
+    private readonly EquivalencyOptions<Account> _equivalencyOptions;
 
     public AccountServiceTests()
     {
-        _sut = new AccountService(_accountRepository, _accountValidator, _dateTimeProvider, _optionsValidator, _passwordHasher, _globalSettingsService, _emailService, _logger);
+        _sut = new AccountService(_accountRepository, _accountValidator, _dateTimeProvider, _optionsValidator, _passwordHasher, _globalSettingsService, _emailService, _logger,_passwordResetValidator);
 
-        _EquivalencyOptions = new EquivalencyOptions<Account>().Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>();
+        _equivalencyOptions = new EquivalencyOptions<Account>().Using<DateTime>(x => x.Subject.Should().BeCloseTo(x.Expectation, TimeSpan.FromSeconds(1))).WhenTypeIs<DateTime>();
     }
 
     public AccountService _sut { get; set; }
@@ -69,8 +72,7 @@ public class AccountServiceTests
         _accountRepository.GetByUsernameAsync(serviceAccount.Username).Returns(serviceAccount);
         _passwordHasher.CreateActivationToken().Returns("Test");
         _passwordHasher.Hash(account.Password).Returns("TestHash");
-
-        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
+        
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
 
@@ -169,7 +171,7 @@ public class AccountServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, _ => _EquivalencyOptions);
+        result.Should().BeEquivalentTo(account, _ => _equivalencyOptions);
     }
 
     [Fact]
@@ -212,7 +214,7 @@ public class AccountServiceTests
         // Assert
         result.Should().NotBeNull();
         result.Should().ContainSingle();
-        result.First().Should().BeEquivalentTo(account, _ => _EquivalencyOptions);
+        result.First().Should().BeEquivalentTo(account, _ => _equivalencyOptions);
     }
 
     [Fact]
@@ -245,6 +247,19 @@ public class AccountServiceTests
     }
 
     [Fact]
+    public async Task GetByEmailAsync_ReturnsNull_WhenNoEmailIsSupplied()
+    {
+        // Arrange
+        _accountRepository.GetByEmailAsync(string.Empty).Returns((Account?)null);
+        
+        // Act
+        var result = await _sut.GetByEmailAsync(null);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
     public async Task GetByEmailAsync_ReturnsNull_WhenEmailNotFound()
     {
         // Arrange
@@ -269,7 +284,7 @@ public class AccountServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, _ => _EquivalencyOptions);
+        result.Should().BeEquivalentTo(account, _ => _equivalencyOptions);
     }
 
     [Fact]
@@ -297,7 +312,7 @@ public class AccountServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(account, _ => _EquivalencyOptions);
+        result.Should().BeEquivalentTo(account, _ => _equivalencyOptions);
     }
 
     [Fact]
@@ -565,8 +580,7 @@ public class AccountServiceTests
         _accountRepository.UpdateActivationAsync(Arg.Any<Account>()).Returns(true);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username).Returns(serviceAccount);
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
-
-        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
+        
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
 
@@ -639,5 +653,86 @@ public class AccountServiceTests
 
         IEnumerable<ICall>? loggerCall = _logger.ReceivedCalls();
         loggerCall.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task RequestPasswordResetAsync_ShouldReturnFalse_WhenAccountDoesNotExist()
+    {
+        // Arrange
+        var email = "email@email.com";
+
+        _accountRepository.GetByEmailAsync(email).Returns((Account?)null);
+        
+        // Act
+        var result = await _sut.RequestPasswordReset(email);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task RequestPasswordResetAsync_ShouldReturnTrueAndNotUpdate_WhenRecentRequestExists()
+    {
+        // Arrange
+        DateTime now = DateTime.UtcNow;
+        Account account = Fakes.GenerateAccount();
+        
+        account.PasswordResetRequestedUtc = now;
+        
+        _dateTimeProvider.GetUtcNow().Returns(now);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.PASSWORD_REQUEST_DURATION_MINS, 5).Returns(5);
+
+        _accountRepository.GetByEmailAsync(account.Email).Returns(account);
+        
+        // Act
+        var result = await _sut.RequestPasswordReset(account.Email);
+
+        // Assert
+        result.Should().BeTrue();
+        await _accountRepository.DidNotReceive().RequestPasswordResetAsync(account.Email, Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task RequestPasswordResetAsync_ShouldReturnTrueAndUpdate_WhenRequestIsExpired()
+    {
+        // Arrange
+        DateTime now = DateTime.UtcNow;
+        Account account = Fakes.GenerateAccount();
+        
+        account.PasswordResetRequestedUtc = now.AddMinutes(-10);
+        
+        _dateTimeProvider.GetUtcNow().Returns(now);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.PASSWORD_REQUEST_DURATION_MINS, 5).Returns(5);
+        _passwordHasher.CreateOneTimeCode().Returns("069420");
+
+        _accountRepository.GetByEmailAsync(account.Email).Returns(account);
+        
+        // Act
+        var result = await _sut.RequestPasswordReset(account.Email);
+
+        // Assert
+        result.Should().BeTrue();
+        await _accountRepository.Received().RequestPasswordResetAsync(account.Email, "069420");
+    }
+    
+    [Fact]
+    public async Task RequestPasswordResetAsync_ShouldReturnTrueAndUpdate_WhenNoRequestExists()
+    {
+        // Arrange
+        DateTime now = DateTime.UtcNow;
+        Account account = Fakes.GenerateAccount();
+        
+        _dateTimeProvider.GetUtcNow().Returns(now);
+        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.PASSWORD_REQUEST_DURATION_MINS, 5).Returns(5);
+        _passwordHasher.CreateOneTimeCode().Returns("069420");
+
+        _accountRepository.GetByEmailAsync(account.Email).Returns(account);
+        
+        // Act
+        var result = await _sut.RequestPasswordReset(account.Email);
+
+        // Assert
+        result.Should().BeTrue();
+        await _accountRepository.Received().RequestPasswordResetAsync(account.Email, "069420");
     }
 }

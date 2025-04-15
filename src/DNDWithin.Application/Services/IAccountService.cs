@@ -1,4 +1,5 @@
 ﻿using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Auth;
 
 namespace DNDWithin.Application.Services;
 
@@ -21,4 +22,9 @@ public interface IAccountService
     Task<bool> DeleteAsync(Guid id, CancellationToken token = default);
     Task<bool> ActivateAsync(AccountActivation activation, CancellationToken token = default);
     Task<bool> ResendActivationAsync(AccountActivation activationRequest, CancellationToken token = default);
+    Task<bool> ExistsByIdAsync(Guid id, CancellationToken token = default);
+    Task<bool> ExistsByEmailAsync(string email, CancellationToken token = default);
+    Task<bool> RequestPasswordReset(string email, CancellationToken token = default);
+    Task<bool> VerifyPasswordResetCode(string email, string code, CancellationToken token = default);
+    Task<bool> ResetPassword(PasswordReset reset, CancellationToken token = default);
 }

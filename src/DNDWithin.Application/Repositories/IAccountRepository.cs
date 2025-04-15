@@ -1,4 +1,5 @@
 ﻿using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Auth;
 
 namespace DNDWithin.Application.Repositories;
 
@@ -17,4 +18,7 @@ public interface IAccountRepository
     Task<bool> DeleteAsync(Guid id, CancellationToken token = default);
     Task<bool> ActivateAsync(Account account, CancellationToken token = default);
     Task<bool> UpdateActivationAsync(Account account, CancellationToken token = default);
+    Task<bool> RequestPasswordResetAsync(string email, string resetCode, CancellationToken token = default);
+    Task<bool> ResetPasswordAsync(PasswordReset reset, CancellationToken token = default);
+    Task<bool> LoginAsync(AccountLogin accountLogin, CancellationToken token = default);
 }

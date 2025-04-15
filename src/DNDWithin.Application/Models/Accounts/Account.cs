@@ -19,6 +19,8 @@ public class Account
     public DateTime? DeletedUtc { get; set; }
     public DateTime? ActivationExpiration { get; set; }
     public string? ActivationCode { get; set; }
+    public DateTime? PasswordResetRequestedUtc { get; set; }
+    public string? ResetCode { get; set; }
 }
 
 public class Activation

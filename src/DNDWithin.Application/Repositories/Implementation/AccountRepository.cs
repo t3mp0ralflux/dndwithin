@@ -3,6 +3,7 @@ using Dapper;
 using DNDWithin.Application.Database;
 using DNDWithin.Application.Models;
 using DNDWithin.Application.Models.Accounts;
+using DNDWithin.Application.Models.Auth;
 using DNDWithin.Application.Services.Implementation;
 
 namespace DNDWithin.Application.Repositories.Implementation;
@@ -26,7 +27,9 @@ public class AccountRepository : IAccountRepository
                                             acct.account_status as accountstatus, 
                                             acct.account_role as accountrole,
                                             acct.activation_expiration as activationexpiration,
-                                            acct.activation_code as activationcode
+                                            acct.activation_code as activationcode,
+                                            acct.password_reset_requested_utc as PasswordResetRequestedUtc,
+                                            acct.password_reset_code as ResetCode
                                             """;
 
     public AccountRepository(IDbConnectionFactory dbConnection, IDateTimeProvider dateTimeProvider)
@@ -226,6 +229,66 @@ public class AccountRepository : IAccountRepository
                                                                          where id = @Id
                                                                          """, new { account.Id, account.ActivationCode, account.ActivationExpiration }));
 
+        transaction.Commit();
+        return result > 0;
+    }
+
+    public async Task<bool> RequestPasswordResetAsync(string email, string resetCode, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        using IDbTransaction transaction = connection.BeginTransaction();
+
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
+                                                                         update account
+                                                                         set password_reset_requested_utc = @ResetUtc, password_reset_code = @ResetCode
+                                                                         where lower(email) = @Email
+                                                                         """, new
+                                                                              {
+                                                                                  ResetUtc = _dateTimeProvider.GetUtcNow(),
+                                                                                  ResetCode = resetCode,
+                                                                                  Email = email.ToLowerInvariant(),
+                                                                                  Now = _dateTimeProvider.GetUtcNow()
+                                                                              }, cancellationToken: token));
+        
+        transaction.Commit();
+        return result > 0;
+    }
+
+    public async Task<bool> ResetPasswordAsync(PasswordReset reset, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        using IDbTransaction transaction = connection.BeginTransaction();
+
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
+                                                                         update account
+                                                                         set password = @Password, updated_utc = @Now, password_reset_requested_utc = null, password_reset_code = null
+                                                                         where lower(email) = @Email
+                                                                         """, new
+                                                                              {
+                                                                                  reset.Password,
+                                                                                  Now = _dateTimeProvider.GetUtcNow(),
+                                                                                  Email = reset.Email.ToLowerInvariant()
+                                                                              }, cancellationToken: token));
+        
+        transaction.Commit();
+        return result > 0;
+    }
+
+    public async Task<bool> LoginAsync(AccountLogin accountLogin, CancellationToken token = default)
+    {
+        using IDbConnection connection = await _dbConnection.CreateConnectionAsync(token);
+        using IDbTransaction transaction = connection.BeginTransaction();
+
+        int result = await connection.ExecuteAsync(new CommandDefinition("""
+                                                                         update account
+                                                                         set password_reset_requested_utc = null, password_reset_code = null, last_login_utc = @Now
+                                                                         where lower(email) = @Email
+                                                                         """, new
+                                                                              {
+                                                                                  Now = _dateTimeProvider.GetUtcNow(),
+                                                                                  Email = accountLogin.Email
+                                                                              }, cancellationToken: token));
+        
         transaction.Commit();
         return result > 0;
     }
