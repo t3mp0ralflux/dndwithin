@@ -327,13 +327,13 @@ public class AccountControllerTests
         string username = "TestUsername";
         string activationcode = "Activate";
 
-        _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Returns(false);
+        _AccountService.ActivateAsync(Arg.Any<AccountActivation>()).Throws(new ValidationException("Error, yo"));
 
         // Act
         Func<Task<IActionResult>>? action = async () => await _sut.Activate(username, activationcode, CancellationToken.None);
 
         // Assert
-        await action.Should().ThrowAsync<Exception>("Server error has occurred, contact support");
+        await action.Should().ThrowAsync<Exception>("Error, yo");
     }
 
     [Fact]
@@ -397,13 +397,13 @@ public class AccountControllerTests
         string username = "TestUsername";
         string activationcode = "Activate";
 
-        _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Returns(false);
+        _AccountService.ResendActivationAsync(Arg.Any<AccountActivation>()).Throws(new ValidationException("Error, yo"));
 
         // Act
         Func<Task<IActionResult>>? action = async () => await _sut.ResendActivation(username, activationcode, CancellationToken.None);
 
         // Assert
-        await action.Should().ThrowAsync<Exception>("Server error has occurred, contact support");
+        await action.Should().ThrowAsync<Exception>("Error, yo");
     }
 
     [Fact]

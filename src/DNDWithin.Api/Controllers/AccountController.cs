@@ -5,6 +5,7 @@ using DNDWithin.Application.Models.Accounts;
 using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.Account;
 using DNDWithin.Contracts.Responses.Account;
+using DNDWithin.Contracts.Responses.Errors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,6 +23,8 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Accounts.Create)]
+    [ProducesResponseType<AccountResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ValidationFailureResponse>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] AccountCreateRequest request, CancellationToken token)
     {
         Account account = request.ToAccount();
@@ -33,6 +36,8 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Accounts.Get)]
+    [ProducesResponseType<AccountResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get([FromRoute] Guid id, CancellationToken token)
     {
         Account? account = await _accountService.GetByIdAsync(id, token);
@@ -48,6 +53,7 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Accounts.GetAll)]
+    [ProducesResponseType<AccountsResponse>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] GetAllAccountsRequest request, CancellationToken token)
     {
         GetAllAccountsOptions options = request.ToOptions();
@@ -60,6 +66,8 @@ public class AccountController : ControllerBase
     }
 
     [HttpPut(ApiEndpoints.Accounts.Update)]
+    [ProducesResponseType<AccountResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] AccountUpdateRequest request, CancellationToken token)
     {
         Account account = request.ToAccount(id);
@@ -76,6 +84,8 @@ public class AccountController : ControllerBase
 
     [Authorize(AuthConstants.AdminUserPolicyName)]
     [HttpDelete(ApiEndpoints.Accounts.Delete)]
+    [ProducesResponseType<NoContentResult>(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken token)
     {
         bool deleted = await _accountService.DeleteAsync(id, token);
@@ -89,6 +99,8 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Accounts.Activate)]
+    [ProducesResponseType<AccountActivationResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationFailureResponse>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Activate([FromRoute] string username, [FromRoute] string activationcode, CancellationToken token)
     {
         AccountActivation activationRequest = new()
@@ -98,12 +110,8 @@ public class AccountController : ControllerBase
                                                   Expiration = DateTime.MinValue
                                               };
 
-        bool activationResult = await _accountService.ActivateAsync(activationRequest, token);
-
-        if (!activationResult)
-        {
-            throw new Exception("Server error has occurred, contact support"); // either didn't activate or DB had error. Validations throw exception.
-        }
+        // throws validation errors
+        await _accountService.ActivateAsync(activationRequest, token);
 
         AccountActivationResponse response = activationRequest.ToResponse();
 
@@ -111,6 +119,9 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Accounts.ResendActivation)]
+    [ProducesResponseType<AccountActivationResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ValidationFailureResponse>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResendActivation([FromRoute] string username, [FromRoute] string activationCode, CancellationToken token)
     {
         AccountActivation activationRequest = new()
@@ -121,9 +132,10 @@ public class AccountController : ControllerBase
                                               };
         bool resendActivationResult = await _accountService.ResendActivationAsync(activationRequest, token);
 
+        // validations throw exceptions. False means account wasn't found.
         if (!resendActivationResult)
         {
-            throw new Exception("Server error has occurred, contact support"); // either didn't activate or DB had error. Validations throw exception.
+            return NotFound();
         }
 
         AccountActivationResponse response = activationRequest.ToResponse();
