@@ -9,17 +9,17 @@ using Microsoft.Extensions.Logging;
 
 namespace DNDWithin.Application.HostedServices;
 
-public class EmailVerificationService : IHostedService
+public class EmailService : IHostedService
 {
     private readonly IConfiguration _configuration;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IEmailService _emailService;
     private readonly IGlobalSettingsService _globalSettingsService;
-    private readonly ILogger<EmailVerificationService> _logger;
+    private readonly ILogger<EmailService> _logger;
 
-    private PeriodicTimer _timer;
+    private PeriodicTimer _timer = new PeriodicTimer(TimeSpan.FromSeconds(9999)); // initial value to prevent running for a while. Overridden in StartAsync.
 
-    public EmailVerificationService(ILogger<EmailVerificationService> logger, IEmailService emailService, IDateTimeProvider dateTimeProvider, IGlobalSettingsService globalSettingsService, IConfiguration configuration)
+    public EmailService(ILogger<EmailService> logger, IEmailService emailService, IDateTimeProvider dateTimeProvider, IGlobalSettingsService globalSettingsService, IConfiguration configuration)
     {
         _logger = logger;
         _emailService = emailService;

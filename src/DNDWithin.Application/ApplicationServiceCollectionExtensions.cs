@@ -6,6 +6,7 @@ using DNDWithin.Application.Services;
 using DNDWithin.Application.Services.Implementation;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using EmailService = DNDWithin.Application.HostedServices.EmailService;
 
 namespace DNDWithin.Application;
 
@@ -27,7 +28,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<IAccountService, AccountService>();
         services.AddSingleton<IAuthService, AuthService>();
         services.AddSingleton<IGlobalSettingsService, GlobalSettingsService>();
-        services.AddSingleton<IEmailService, EmailService>();
+        services.AddSingleton<IEmailService, Services.Implementation.EmailService>();
         services.AddSingleton<ICharacterService, CharacterService>();
 
         #endregion
@@ -52,9 +53,9 @@ public static class ApplicationServiceCollectionExtensions
     {
         services.AddSingleton<IDbConnectionFactory>(_ => new NpgsqlConnectionFactory(connectionString));
         services.AddSingleton<DbInitializer>();
-        services.AddSingleton<IEmailService, EmailService>();
+        services.AddSingleton<IEmailService, Services.Implementation.EmailService>();
 
-        services.AddHostedService<EmailVerificationService>();
+        services.AddHostedService<EmailService>();
 
         return services;
     }

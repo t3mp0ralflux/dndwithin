@@ -166,10 +166,11 @@ public class AuthControllerTests
         _accountService.RequestPasswordReset(email).Returns(false);
         
         // Act
-        OkResult result = (OkResult)await _sut.RequestPasswordReset(email, CancellationToken.None);
+        OkObjectResult result = (OkObjectResult)await _sut.RequestPasswordReset(email, CancellationToken.None);
 
         // Assert
         result.StatusCode.Should().Be(200);
+        result.Value.Should().Be(email);
     }
     
     [Fact]
@@ -180,10 +181,11 @@ public class AuthControllerTests
         _accountService.RequestPasswordReset(email).Returns(true);
         
         // Act
-        OkResult result = (OkResult)await _sut.RequestPasswordReset(email, CancellationToken.None);
+        OkObjectResult result = (OkObjectResult)await _sut.RequestPasswordReset(email, CancellationToken.None);
 
         // Assert
         result.StatusCode.Should().Be(200);
+        result.Value.Should().Be(email);
     }
 
     [Fact]

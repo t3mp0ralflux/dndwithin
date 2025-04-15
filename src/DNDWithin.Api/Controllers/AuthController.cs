@@ -70,6 +70,20 @@ public class AuthController : ControllerBase
     {
         await _accountService.RequestPasswordReset(email, token); // DO NOT SURFACE TO USER. If the account isn't found, it'll fail in silence.
 
+        return Ok(email);
+    }
+
+    [HttpPost(ApiEndpoints.Auth.VerifyPasswordResetCode)]
+    public async Task<IActionResult> VerifyPasswordResetCode([FromRoute]string email, [FromBody] PasswordResetVerification verification, CancellationToken token)
+    {
+        if (!string.Equals(email.ToLowerInvariant(), verification.Email.ToLowerInvariant()))
+        {
+            return BadRequest("Email not valid");
+        }
+        
+        // throws ValidationExceptions if not valid
+        await _accountService.VerifyPasswordResetCode(verification.Email, verification.Code, token);
+        
         return Ok();
     }
 

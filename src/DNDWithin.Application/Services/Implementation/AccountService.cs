@@ -198,9 +198,42 @@ public class AccountService : IAccountService
             }
         }
 
-        string resetCode = _passwordHasher.CreateOneTimeCode();
+        account.ResetCode = _passwordHasher.CreateOneTimeCode();
 
-        await _accountRepository.RequestPasswordResetAsync(email, resetCode, token);
+        await _accountRepository.RequestPasswordResetAsync(email, account.ResetCode, token);
+        
+        try
+        {
+            await QueuePasswordResetEmail(account, token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+        }
+
+        return true;
+    }
+
+    public async Task<bool> VerifyPasswordResetCode(string email, string code, CancellationToken token = default)
+    {
+        Account? account = await _accountRepository.GetByEmailAsync(email, token);
+
+        if (account?.PasswordResetRequestedUtc == null)
+        {
+            throw new ValidationException("Reset was not requested");
+        }
+
+        int maxPasswordResetMins = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.PASSWORD_RESET_REQUEST_EXPIRATION_MINS, 5, token);
+
+        if ((_dateTimeProvider.GetUtcNow() - account.PasswordResetRequestedUtc.Value).Duration() > TimeSpan.FromMinutes(maxPasswordResetMins))
+        {
+            throw new ValidationException("Code has expired");
+        }
+
+        if (!string.Equals(account.ResetCode, code))
+        {
+            throw new ValidationException("Code has expired");
+        }
 
         return true;
     }
@@ -218,13 +251,15 @@ public class AccountService : IAccountService
 
     private async Task QueueActivationEmail(Account account, CancellationToken token = default)
     {
-        string? linkFormat = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty, token);
-        string? emailFormat = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty, token);
         string? serviceUsername = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty, token);
+        string? emailFormat = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty, token);
         int expirationMinutes = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACCOUNT_ACTIVATION_EXPIRATION_MINS, 5, token);
 
         Account? serviceAccount = await _accountRepository.GetByUsernameAsync(serviceUsername, token);
 
+        string activationLink = string.Format(ApplicationAssumptions.ACTIVATION_LINK_FORMAT, account.Username, account.ActivationCode);
+        string resendLink = string.Format(ApplicationAssumptions.RESEND_ACTIVATION_LINK_FORMAT, account.Username, account.ActivationCode);
+        
         EmailData data = new()
                          {
                              Id = Guid.NewGuid(),
@@ -235,7 +270,32 @@ public class AccountService : IAccountService
                              ReceiverAccountId = account.Id,
                              SenderEmail = serviceAccount.Email,
                              RecipientEmail = account.Email,
-                             Body = string.Format(emailFormat, string.Format(linkFormat, account.Username, account.ActivationCode), expirationMinutes), // TODO:MUST: this will be pre-formatted HTML for emails with standard warnings in it.
+                             Body = string.Format(emailFormat, activationLink, resendLink, expirationMinutes),
+                             ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created;"
+                         };
+
+        _emailService.QueueEmailAsync(data, token); // fire and forget, no waiting.
+    }
+    
+    private async Task QueuePasswordResetEmail(Account account, CancellationToken token = default)
+    {
+        string? serviceUsername = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty, token);
+        string? emailFormat = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.PASSWORD_RESET_EMAIL_FORMAT, string.Empty, token);
+        int expirationMinutes = await _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.PASSWORD_RESET_REQUEST_EXPIRATION_MINS, 5, token);
+
+        Account? serviceAccount = await _accountRepository.GetByUsernameAsync(serviceUsername, token);
+        
+        EmailData data = new()
+                         {
+                             Id = Guid.NewGuid(),
+                             ShouldSend = true,
+                             SendAttempts = 0,
+                             SendAfterUtc = _dateTimeProvider.GetUtcNow(),
+                             SenderAccountId = serviceAccount.Id,
+                             ReceiverAccountId = account.Id,
+                             SenderEmail = serviceAccount.Email,
+                             RecipientEmail = account.Email,
+                             Body = string.Format(emailFormat, account.ResetCode, expirationMinutes),
                              ResponseLog = $"{_dateTimeProvider.GetUtcNow()}: Email created;"
                          };
 

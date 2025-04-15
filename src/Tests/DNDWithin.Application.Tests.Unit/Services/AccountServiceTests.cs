@@ -72,8 +72,7 @@ public class AccountServiceTests
         _accountRepository.GetByUsernameAsync(serviceAccount.Username).Returns(serviceAccount);
         _passwordHasher.CreateActivationToken().Returns("Test");
         _passwordHasher.Hash(account.Password).Returns("TestHash");
-
-        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
+        
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
 
@@ -581,8 +580,7 @@ public class AccountServiceTests
         _accountRepository.UpdateActivationAsync(Arg.Any<Account>()).Returns(true);
         _accountRepository.GetByUsernameAsync(serviceAccount.Username).Returns(serviceAccount);
         _accountRepository.GetByUsernameAsync(account.Username).Returns(account);
-
-        _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_LINK_FORMAT, string.Empty).Returns(testLinkFormat);
+        
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.ACTIVATION_EMAIL_FORMAT, string.Empty).Returns(testEmailFormat);
         _globalSettingsService.GetSettingCachedAsync(WellKnownGlobalSettings.SERVICE_ACCOUNT_USERNAME, string.Empty).Returns(serviceAccount.Username);
 

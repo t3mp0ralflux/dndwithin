@@ -25,5 +25,6 @@ public interface IAccountService
     Task<bool> ExistsByIdAsync(Guid id, CancellationToken token = default);
     Task<bool> ExistsByEmailAsync(string email, CancellationToken token = default);
     Task<bool> RequestPasswordReset(string email, CancellationToken token = default);
+    Task<bool> VerifyPasswordResetCode(string email, string code, CancellationToken token = default);
     Task<bool> ResetPassword(PasswordReset reset, CancellationToken token = default);
 }
