@@ -5,6 +5,8 @@ using DNDWithin.Application.Models.Auth;
 using DNDWithin.Application.Services;
 using DNDWithin.Contracts.Requests.Auth;
 using DNDWithin.Contracts.Responses.Auth;
+using DNDWithin.Contracts.Responses.Errors;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +29,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Auth.Login)]
+    [ProducesResponseType<OkObjectResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<UnauthorizedObjectResult>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken token)
     {
         Account? account;
@@ -66,6 +71,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Auth.RequestPasswordReset)]
+    [ProducesResponseType<OkObjectResult>(StatusCodes.Status200OK)]
     public async Task<IActionResult> RequestPasswordReset([FromRoute] string email, CancellationToken token)
     {
         await _accountService.RequestPasswordReset(email, token); // DO NOT SURFACE TO USER. If the account isn't found, it'll fail in silence.
@@ -74,11 +80,13 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Auth.VerifyPasswordResetCode)]
+    [ProducesResponseType<OkResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationFailureResponse>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyPasswordResetCode([FromRoute]string email, [FromBody] PasswordResetVerification verification, CancellationToken token)
     {
         if (!string.Equals(email.ToLowerInvariant(), verification.Email.ToLowerInvariant()))
         {
-            return BadRequest("Email not valid");
+            throw new ValidationException("Email not valid");
         }
         
         // throws ValidationExceptions if not valid
@@ -88,6 +96,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Auth.PasswordReset)]
+    [ProducesResponseType<PasswordResetResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ValidationFailureResponse>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PasswordReset([FromBody] PasswordResetRequest request, CancellationToken token)
     {
         bool accountExists = await _accountService.ExistsByEmailAsync(request.Email, token);

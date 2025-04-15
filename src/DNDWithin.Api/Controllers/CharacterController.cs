@@ -27,6 +27,8 @@ public class CharacterController : ControllerBase
     }
 
     [HttpPost(ApiEndpoints.Characters.Create)]
+    [ProducesResponseType<CharacterResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<UnauthorizedResult>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create(CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail(), token);
@@ -54,6 +56,9 @@ public class CharacterController : ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Characters.Get)]
+    [ProducesResponseType<CharacterResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<UnauthorizedResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get([FromRoute]Guid id, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
@@ -76,6 +81,8 @@ public class CharacterController : ControllerBase
     }
 
     [HttpGet(ApiEndpoints.Characters.GetAll)]
+    [ProducesResponseType<CharactersResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<UnauthorizedResult>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery]GetAllCharactersRequest request, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
@@ -96,6 +103,9 @@ public class CharacterController : ControllerBase
     }
 
     [HttpPut(ApiEndpoints.Characters.Update)]
+    [ProducesResponseType<CharacterResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<UnauthorizedResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update([FromBody]CharacterUpdateRequest request, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
@@ -120,6 +130,9 @@ public class CharacterController : ControllerBase
     }
 
     [HttpDelete(ApiEndpoints.Characters.Delete)]
+    [ProducesResponseType<NoContentResult>(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<UnauthorizedResult>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<NotFoundResult>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete([FromRoute]Guid id, CancellationToken token)
     {
         Account? account = await _accountService.GetByEmailAsync(HttpContext.GetUserEmail()!, token);
